@@ -265,7 +265,43 @@ docker compose --profile test run --rm tests         # + PostGIS 16/3.4 integrat
 
 ---
 
-## 11. Configuration
+## 11. CI/CD
+
+[![CI](https://github.com/shahidkarimi/iris_osint/actions/workflows/ci.yml/badge.svg)](https://github.com/shahidkarimi/iris_osint/actions/workflows/ci.yml)
+[![Deploy](https://github.com/shahidkarimi/iris_osint/actions/workflows/deploy.yml/badge.svg)](https://github.com/shahidkarimi/iris_osint/actions/workflows/deploy.yml)
+
+```mermaid
+flowchart LR
+  PR[pull request] --> CI
+  M[push to main] --> CI[CI<br/>ruff · mypy · shellcheck<br/>pytest 3.11/3.12 + PostGIS<br/>fixture harvest ×2]
+  CI --> B[build image once<br/>SBOM · provenance · Trivy]
+  B -->|ghcr.io …@sha256| D[release on VPS<br/>pull · switch · health wait]
+  D --> V[verify public /healthz<br/>revision = commit]
+  V -- fails --> RB[automatic rollback]
+```
+
+* **[`ci.yml`](.github/workflows/ci.yml)** — every PR: lint and strict typing, the full test suite on Python 3.11 and
+  3.12 against a real PostGIS 16/3.4 service, ≥ 85 % coverage, an end-to-end offline harvest that is run twice and
+  must not change the row count, `jll-harvester validate`, and a Docker build.
+* **[`deploy.yml`](.github/workflows/deploy.yml)** — every push to `main` re-runs the same CI, builds the image
+  **once**, pushes it to GHCR (`sha-<commit>` + `latest`) with SBOM and signed build provenance, scans it with Trivy
+  (results in *Security → Code scanning*), and releases it to the `production` environment **by digest**.
+  [`deploy/deploy.sh`](deploy/deploy.sh) on the server pulls the image, switches the services, waits for their
+  health checks and confirms that `/healthz` reports the deployed commit; the workflow then checks the public URL
+  and every dashboard page. Any failure rolls back to the previous image automatically.
+* **Rollback / redeploy** — *Actions → Deploy → Run workflow* with `image` set to an earlier tag
+  (e.g. `ghcr.io/shahidkarimi/iris_osint:sha-1a2b3c4`), or on the server `deploy/deploy.sh rollback`.
+* **Security** — actions pinned to commit SHAs, least-privilege job permissions, a dedicated `deploy` user whose key is
+  `restrict`ed (no TTY or forwarding) and lives only in the `production` environment (deployable from `main`
+  only), pinned SSH host keys, the registry token is the job's short-lived `GITHUB_TOKEN`, and one multiplexed SSH
+  connection per deploy (the server rate-limits SSH). Dependabot proposes weekly grouped updates.
+* **Configuration** — environment `production`: secrets `DEPLOY_SSH_KEY`, `DEPLOY_KNOWN_HOSTS`; variables
+  `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_PATH`, `PUBLIC_URL`. Server secrets stay in the server's `.env`, which CI
+  never reads or writes except for the released image reference (`IRIS_IMAGE`, `IRIS_IMAGE_PREVIOUS`).
+
+---
+
+## 12. Configuration
 
 All settings are environment variables (prefix `IRIS_`), see [`.env.example`](.env.example) and
 [`config.py`](src/jll_harvester/config.py). Most relevant:
@@ -285,10 +321,11 @@ All settings are environment variables (prefix `IRIS_`), see [`.env.example`](.e
 | `PLAIN_HTTP_HOST` | `127.0.0.1` | extra host (e.g. the server's IP) served over plain HTTP, since an IP gets no certificate |
 | `IRIS_WEB_BASIC_AUTH_USER/PASSWORD` | — | optional dashboard protection |
 | `IRIS_LOG_FORMAT` | `text` | `json` for structured logs |
+| `IRIS_IMAGE` | `iris-sig45:latest` | image the stack runs; set by the deploy pipeline to a `ghcr.io/…@sha256` digest |
 
 ---
 
-## 12. Assumptions
+## 13. Assumptions
 
 * "Research & Transactions Newsroom" = JLL DE press releases (`/de-de/newsroom/`) plus research pages
   (`/de-de/insights/market-dynamics/`); research pages are assessed but aggregate market reports are out of scope.
@@ -301,7 +338,7 @@ All settings are environment variables (prefix `IRIS_`), see [`.env.example`](.e
   (`location_coarse_municipality`).
 * Staging is append/update with retraction — downstream consumers decide on deletion.
 
-## 13. Known limitations
+## 14. Known limitations
 
 * **Source access** depends on the egress network (Akamai denies datacenter IPs — see §2).
 * Rule-based classification is tuned on the JLL DE corpus (≈ 700 pages) — precise but brittle to style changes;
@@ -313,7 +350,7 @@ All settings are environment variables (prefix `IRIS_`), see [`.env.example`](.e
 
 ---
 
-## 14. Repository layout
+## 15. Repository layout
 
 ```
 src/jll_harvester/        package (CLI, pipeline, db, web)
@@ -323,7 +360,8 @@ src/jll_harvester/        package (CLI, pipeline, db, web)
 tests/                    unit, integration and web tests + fixtures
 scripts/                  build_gazetteer.py, make_fixture.py
 samples/                  sample output + quality report
-deploy/Caddyfile          TLS reverse proxy
+deploy/                   Caddyfile (TLS reverse proxy), deploy.sh (server-side release + rollback)
+.github/                  CI, deploy pipeline, Dependabot
 docker-compose.yml, Dockerfile, .env.example, Makefile
 ```
 

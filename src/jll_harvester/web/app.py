@@ -255,7 +255,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             with pool.connection(timeout=3) as conn:
                 conn.execute("SELECT 1")
-            return {"status": "ok", "db": "ok", "version": __version__}
+            return {"status": "ok", "db": "ok", "version": __version__, "revision": settings.revision}
         except Exception as exc:  # pragma: no cover - exercised in deployment
             raise HTTPException(503, f"db: {exc}") from exc
 

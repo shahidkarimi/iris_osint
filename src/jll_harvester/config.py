@@ -80,6 +80,8 @@ class Settings(BaseSettings):
     map_style_url: str = "https://tiles.openfreemap.org/styles/positron"
     map_style_url_dark: str = "https://tiles.openfreemap.org/styles/dark"
     default_locale: str = "de"
+    # git commit the image was built from (baked in by CI); /healthz reports it so deploys can be verified
+    revision: str = "dev"
 
     @field_validator("section_prefixes", mode="before")
     @classmethod

@@ -1,0 +1,228 @@
+# Continuous delivery: every push to main is tested, built once into an immutable image, scanned, attested,
+# released to the VPS by digest, verified end-to-end and rolled back automatically if verification fails.
+#
+# Manual use (Actions → Deploy → Run workflow):
+#   - no input: build and deploy the selected ref
+#   - image:    redeploy an existing image without rebuilding, e.g. ghcr.io/<owner>/<repo>:sha-1a2b3c4 (rollback)
+#
+# Required configuration (environment "production"):
+#   secrets  DEPLOY_SSH_KEY       private key of the `deploy` user on the server
+#            DEPLOY_KNOWN_HOSTS   the server's pinned SSH host keys
+#   vars     DEPLOY_HOST, DEPLOY_USER, DEPLOY_PATH, PUBLIC_URL
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "samples/**"
+      - ".github/dependabot.yml"
+  workflow_dispatch:
+    inputs:
+      image:
+        description: "Existing image to deploy instead of building (tag or @sha256 digest)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash # explicit shell => -eo pipefail
+
+concurrency:
+  # one release at a time; a newer push supersedes a queued (not a running) one
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    name: CI
+    if: ${{ !inputs.image }}
+    uses: ./.github/workflows/ci.yml
+
+  image:
+    name: Build, scan & publish image
+    needs: ci
+    if: ${{ !inputs.image }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      packages: write # push to ghcr.io
+      id-token: write # sign the provenance attestation
+      attestations: write
+      security-events: write # upload the vulnerability scan to code scanning
+    outputs:
+      ref: ${{ steps.ref.outputs.ref }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Image name
+        id: name
+        run: echo "image=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        id: meta
+        with:
+          images: ${{ steps.name.outputs.image }}
+          tags: |
+            type=sha,format=short,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
+          labels: |
+            org.opencontainers.image.title=IRIS-SIG-45 JLL harvester
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        id: build
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: IRIS_REVISION=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: mode=max
+          sbom: true
+      - name: Immutable reference
+        id: ref
+        run: echo "ref=${{ steps.name.outputs.image }}@${{ steps.build.outputs.digest }}" >> "$GITHUB_OUTPUT"
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ${{ steps.name.outputs.image }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+      - name: Vulnerability scan (Trivy)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        env:
+          TRIVY_USERNAME: ${{ github.actor }}
+          TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          image-ref: ${{ steps.ref.outputs.ref }}
+          format: sarif
+          output: trivy.sarif
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "0" # findings are reported to code scanning, not a release blocker
+      - uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        if: always() && hashFiles('trivy.sarif') != ''
+        with:
+          sarif_file: trivy.sarif
+          category: container-image
+
+  deploy:
+    name: Release to production
+    needs: image
+    # runs after a successful build, or directly when an existing image is given
+    if: >-
+      !cancelled() &&
+      (needs.image.result == 'success' || (inputs.image && needs.image.result == 'skipped'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment:
+      name: production
+      url: ${{ vars.PUBLIC_URL }}
+    permissions:
+      contents: read
+      packages: read # the server pulls with this job's short-lived token
+    env:
+      IMAGE: ${{ inputs.image || needs.image.outputs.ref }}
+      # empty for a manual redeploy: the server then reads the revision from the image label
+      EXPECTED_REVISION: ${{ !inputs.image && github.sha || '' }}
+      DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Configure SSH (pinned host key, single multiplexed connection)
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/deploy_key ~/.ssh/known_hosts
+          cat > ~/.ssh/config <<EOF
+          Host target
+            HostName ${DEPLOY_HOST}
+            User ${DEPLOY_USER}
+            IdentityFile ~/.ssh/deploy_key
+            IdentitiesOnly yes
+            StrictHostKeyChecking yes
+            ConnectTimeout 20
+            ServerAliveInterval 15
+            ControlMaster auto
+            ControlPath ~/.ssh/cm-%C
+            ControlPersist 10m
+          EOF
+          # the server's firewall rate-limits new SSH connections, so every later step reuses this one
+          ssh -fN target
+
+      - name: Sync deployment files
+        # --inplace keeps the inode of the bind-mounted Caddyfile, so the proxy container sees the new file
+        run: rsync -rtpz --inplace docker-compose.yml deploy target:"$DEPLOY_PATH/"
+
+      - name: Release
+        id: release
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # shellcheck disable=SC2029 # values are meant to expand here and be passed to the server
+          printf '%s' "$GHCR_TOKEN" | ssh target docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin >/dev/null
+          # shellcheck disable=SC2029
+          ssh target "$DEPLOY_PATH/deploy/deploy.sh release '$IMAGE' '$EXPECTED_REVISION'" | tee release.log
+          sed -n 's/^RELEASED .*revision=//p' release.log | tail -n1 | xargs -I{} echo "revision={}" >> "$GITHUB_OUTPUT"
+
+      - name: Verify public endpoint
+        env:
+          PUBLIC_URL: ${{ vars.PUBLIC_URL }}
+          REVISION: ${{ steps.release.outputs.revision }}
+        run: |
+          health=$(curl -fsS --retry 10 --retry-all-errors --retry-delay 3 --max-time 10 "$PUBLIC_URL/healthz")
+          echo "$health"
+          jq -e --arg rev "$REVISION" '.status == "ok" and .db == "ok" and .revision == $rev' <<<"$health" >/dev/null
+          for path in / /signale /karte /qualitaet /methodik /api/summary; do
+            code=$(curl -fsS -o /dev/null -w '%{http_code}' --retry 3 --retry-all-errors --max-time 15 "$PUBLIC_URL$path")
+            echo "$path -> $code"
+          done
+
+      - name: Roll back
+        if: failure() && steps.release.outcome == 'success'
+        run: |
+          # shellcheck disable=SC2029
+          ssh target "$DEPLOY_PATH/deploy/deploy.sh rollback"
+
+      - name: Summary
+        if: always()
+        env:
+          PUBLIC_URL: ${{ vars.PUBLIC_URL }}
+          REVISION: ${{ steps.release.outputs.revision }}
+        run: |
+          {
+            echo "### Release ${{ job.status == 'success' && 'succeeded' || 'failed' }}"
+            echo "| | |"
+            echo "|---|---|"
+            echo "| URL | $PUBLIC_URL |"
+            echo "| Image | \`$IMAGE\` |"
+            echo "| Revision | \`${REVISION:-n/a}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          # shellcheck disable=SC2029
+          ssh target "$DEPLOY_PATH/deploy/deploy.sh status" 2>/dev/null | sed 's/^/    /' >> "$GITHUB_STEP_SUMMARY" || true
+
+      - name: Log out & close connection
+        if: always()
+        run: |
+          ssh target docker logout ghcr.io >/dev/null 2>&1 || true
+          ssh -O exit target 2>/dev/null || true

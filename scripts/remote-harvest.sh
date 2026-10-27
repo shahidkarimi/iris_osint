@@ -18,6 +18,7 @@ cd "$(dirname "$0")/.."
 [ -x .venv/bin/jll-harvester ] || { echo "run 'make install' first" >&2; exit 1; }
 
 # one SSH connection for all values (the server's firewall rate-limits SSH connections)
+# shellcheck disable=SC2029 # REMOTE_DIR is meant to expand locally
 read -r USER_NAME DB_NAME PW < <(ssh "$IRIS_SERVER" \
   "cd $REMOTE_DIR && . ./.env && printf '%s %s %s\n' \"\${POSTGRES_USER:-iris}\" \"\${POSTGRES_DB:-iris}\" \"\$POSTGRES_PASSWORD\"")
 

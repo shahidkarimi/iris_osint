@@ -8,7 +8,8 @@
 
 x-app: &app
   build: .
-  image: iris-sig45:latest
+  # CI deploys set IRIS_IMAGE to an immutable ghcr.io/…@sha256 reference; local builds use the default tag
+  image: ${IRIS_IMAGE:-iris-sig45:latest}
   restart: unless-stopped
   env_file: .env
   environment:
@@ -96,7 +97,7 @@ services:
       retries: 30
 
   tests:
-    image: iris-sig45:latest
+    image: ${IRIS_IMAGE:-iris-sig45:latest}
     build: .
     profiles: ["test"]
     environment:

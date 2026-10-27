@@ -33,6 +33,10 @@ COPY scripts ./scripts
 RUN mkdir -p /app/var/raw /app/samples && chown -R iris:iris /app/var /app/samples
 USER iris
 
+# git commit of this build (set by CI) — last, so a new commit doesn't invalidate the layers above
+ARG IRIS_REVISION=dev
+ENV IRIS_REVISION=${IRIS_REVISION}
+
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=4)" || exit 1

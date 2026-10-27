@@ -221,7 +221,8 @@ def test_api_and_exports(client: TestClient) -> None:
     assert all(c["passed"] for c in client.get("/api/checks").json())
     csv = client.get("/export/signals.csv")
     assert csv.status_code == 200 and csv.text.startswith("signal_id,")
-    assert client.get("/healthz").json()["status"] == "ok"
+    health = client.get("/healthz").json()
+    assert health["status"] == "ok" and health["revision"]
     resp = client.get("/")
     assert "frame-ancestors 'none'" in resp.headers["content-security-policy"]
 

@@ -1,0 +1,138 @@
+# Quality gate: lint, types, unit + PostGIS integration tests, an end-to-end fixture harvest and an image build.
+# Runs on pull requests and is reused (workflow_call) by deploy.yml, so main is gated by exactly the same checks.
+name: CI
+
+on:
+  pull_request:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash # explicit shell => -eo pipefail
+
+concurrency:
+  # cancel superseded runs of the same PR; runs called from deploy.yml are never cancelled here
+  group: ci-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  PYTHONUNBUFFERED: "1"
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+
+jobs:
+  lint:
+    name: Lint & type check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: pip install -e ".[dev]"
+      - name: ruff format
+        run: ruff format --check src tests scripts
+      - name: ruff check
+        run: ruff check --output-format=github src tests scripts
+      - name: mypy --strict
+        run: mypy src
+      - name: shellcheck
+        run: shellcheck deploy/*.sh scripts/*.sh
+
+  test:
+    name: Tests (Python ${{ matrix.python }}, PostGIS 16/3.4)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12"]
+    services:
+      postgis:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_DB: iris_test
+          POSTGRES_USER: iris
+          POSTGRES_PASSWORD: iris # throwaway CI database, not a credential
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U iris -d iris_test"
+          --health-interval 3s
+          --health-timeout 3s
+          --health-retries 30
+    env:
+      IRIS_TEST_DATABASE_URL: postgresql://iris:iris@localhost:5432/iris_test
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: pip install -e ".[dev]"
+      - name: pytest (unit + integration)
+        run: >-
+          pytest -q -p no:cacheprovider
+          --cov=jll_harvester --cov-report=term-missing:skip-covered --cov-report=xml --cov-fail-under=85
+          --junitxml=test-results.xml
+      - name: Coverage summary
+        if: always() && matrix.python == '3.12'
+        run: |
+          {
+            echo "### Coverage (Python ${{ matrix.python }})"
+            coverage report --format=markdown --skip-covered
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: End-to-end fixture harvest (offline, idempotent re-run)
+        if: matrix.python == '3.12'
+        env:
+          IRIS_DATABASE_URL: postgresql://iris:iris@localhost:5432/iris_e2e
+          IRIS_GEOCODER: offline
+          IRIS_RAW_SNAPSHOT_DIR: ${{ runner.temp }}/raw
+          PGPASSWORD: iris
+        run: |
+          psql -h localhost -U iris -d iris_test -c "CREATE DATABASE iris_e2e"
+          jll-harvester migrate
+          jll-harvester harvest --fixtures tests/fixtures/html
+          before=$(psql -h localhost -U iris -d iris_e2e -tAc "SELECT count(*) FROM iris_staging.signal_ingest")
+          jll-harvester harvest --fixtures tests/fixtures/html --full
+          after=$(psql -h localhost -U iris -d iris_e2e -tAc "SELECT count(*) FROM iris_staging.signal_ingest")
+          echo "signals after first run: $before, after re-run: $after"
+          test "$before" -gt 0 && test "$before" -eq "$after"
+          jll-harvester validate
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: test-results-py${{ matrix.python }}
+          path: |
+            test-results.xml
+            coverage.xml
+          retention-days: 14
+
+  image:
+    name: Docker build
+    # deploy.yml builds and pushes the image itself; this only proves a PR still builds
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
