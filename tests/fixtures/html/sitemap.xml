@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Fixture sitemap: real (trimmed) public JLL press releases + synthetic edge cases.
+     Also contains a missing page, a query-string URL and an out-of-section URL. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://www.jll.com/de-de/newsroom/Daniel-Siegl-wird-bei-JLL-neuer-Team-Leader-Industrial-Logistics-Sued</loc><lastmod>2026-10-20T08:00:00.000Z</lastmod></url>
+  <url><loc>https://www.jll.com/de-de/newsroom/Family-Office-verkauft-Wohnanlage-in-Berlin-an-Domicil-Real-Estate-AG</loc><lastmod>2026-10-20T08:00:00.000Z</lastmod></url>
+  <url><loc>https://www.jll.com/de-de/newsroom/Logistiker-mietet-rund-46-000-m2-Hallenflaeche-in-Mittelfranken</loc><lastmod>2026-10-20T08:00:00.000Z</lastmod></url>
+  <url><loc>https://www.jll.com/de-de/newsroom/Univers-Holding-kauft-und-entwickelt-Brownfield-in-Bonn-Auerberg</loc><lastmod>2026-10-20T08:00:00.000Z</lastmod></url>
+  <url><loc>https://www.jll.com/de-de/newsroom/bellaqa-gmbh-erwirbt-gewerbeimmobilie-von-sks-gmbh-beim-muenchner-flughafen</loc><lastmod>2026-10-20T08:00:00.000Z</lastmod></url>
+  <url><loc>https://www.jll.com/de-de/newsroom/chinesischer-handelskonzern-mietet-41200m-logistikflaeche-bei-berlin</loc><lastmod>2026-10-20T08:00:00.000Z</lastmod></url>
+  <url><loc>https://www.jll.com/de-de/newsroom/eqt-kauft-logistikportfolio-southgates-mit-insgesamt-50-000-m</loc><lastmod>2026-10-20T08:00:00.000Z</lastmod></url>
+  <url><loc>https://www.jll.com/de-de/newsroom/henkel-verkauft-zwei-gewerbegrundstuecke-in-heidelberg</loc><lastmod>2026-10-20T08:00:00.000Z</lastmod></url>
+  <url><loc>https://www.jll.com/de-de/newsroom/jll-vermittelt-rund-3200-m2-bueroflaeche-am-europlatz-in-heidelberg</loc><lastmod>2026-10-20T08:00:00.000Z</lastmod></url>
+  <url><loc>https://www.jll.com/de-de/newsroom/logistikdienstleister-mietet-37300-m-nutzflaeche-im-segro-park-dortmund</loc><lastmod>2026-10-20T08:00:00.000Z</lastmod></url>
+  <url><loc>https://www.jll.com/de-de/newsroom/logistikinvestmentmarkt-bestaetigt-aufwaertstrend</loc><lastmod>2026-10-20T08:00:00.000Z</lastmod></url>
+  <url><loc>https://www.jll.com/de-de/newsroom/realterm-kauft-ehemaliges-zerres-logistikzentrum-in-moenchengladbach</loc><lastmod>2026-10-20T08:00:00.000Z</lastmod></url>
+  <url><loc>https://www.jll.com/de-de/newsroom/synthetic-empty</loc><lastmod>2026-10-20T08:00:00.000Z</lastmod></url>
+  <url><loc>https://www.jll.com/de-de/newsroom/synthetic-malformed-jsonld-dateline-only</loc><lastmod>2026-10-20T08:00:00.000Z</lastmod></url>
+  <url><loc>https://www.jll.com/de-de/newsroom/synthetic-no-body</loc><lastmod>2026-10-20T08:00:00.000Z</lastmod></url>
+  <url><loc>https://www.jll.com/de-de/newsroom/synthetic-region-only</loc><lastmod>2026-10-20T08:00:00.000Z</lastmod></url>
+  <url><loc>https://www.jll.com/de-de/newsroom/synthetic-wohnbaugrundstueck</loc><lastmod>2026-10-20T08:00:00.000Z</lastmod></url>
+  <url><loc>https://www.jll.com/de-de/newsroom/universa-versicherung-kauft-grundstueck-in-nuernberg-fuer-neue-firmenzentrale</loc><lastmod>2026-10-20T08:00:00.000Z</lastmod></url>
+  <url><loc>https://www.jll.com/de-de/newsroom/missing-page-404</loc><lastmod>2026-10-20T08:00:00.000Z</lastmod></url>
+  <url><loc>https://www.jll.com/de-de/newsroom?page=2</loc><lastmod>2026-10-20T08:00:00.000Z</lastmod></url>
+  <url><loc>https://www.jll.com/de-de/services/leasing</loc><lastmod>2026-10-20T08:00:00.000Z</lastmod></url>
+  <url><loc>https://www.jll.com/de-de/newsroom</loc><lastmod>2026-10-20T08:00:00.000Z</lastmod></url>
+</urlset>

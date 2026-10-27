@@ -1,0 +1,44 @@
+{% macro type_chip(signal_type, short=False) -%}
+  <span class="chip {{ 'chip-land' if signal_type == 'commercial_land_disposal' else 'chip-box' }}">
+    <span class="{{ 'dot-land' if signal_type == 'commercial_land_disposal' else 'dot-box' }}"></span>
+    {{ t(('type.short.' if short else 'type.') ~ signal_type) }}
+  </span>
+{%- endmacro %}
+
+{% macro geo_chip(status, precision=None) -%}
+  {% set cls = {'resolved': 'chip-ok', 'ambiguous': 'chip-warn', 'unresolved': 'chip-muted', 'invalid': 'chip-err'}[status] %}
+  <span class="chip {{ cls }}">
+    {% if status == 'resolved' %}
+      <svg class="size-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18s6-5.3 6-10a6 6 0 1 0-12 0c0 4.7 6 10 6 10Zm0-8a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" clip-rule="evenodd"/></svg>
+      {{ t('prec.' ~ precision) if precision else t('geo.resolved') }}
+    {% else %}
+      {{ t('geo.' ~ status) }}
+    {% endif %}
+  </span>
+{%- endmacro %}
+
+{% macro run_chip(status) -%}
+  {% set cls = {'succeeded': 'chip-ok', 'partial': 'chip-warn', 'failed': 'chip-err', 'running': 'chip-muted'}[status] %}
+  <span class="chip {{ cls }}">{{ t('run.status.' ~ status) }}</span>
+{%- endmacro %}
+
+{% macro severity_chip(sev) -%}
+  <span class="chip {{ {'error': 'chip-err', 'warning': 'chip-warn', 'info': 'chip-muted'}[sev] }}">{{ sev }}</span>
+{%- endmacro %}
+
+{% macro confidence(value) -%}
+  {% set pct = (value * 100) | round | int %}
+  <span class="inline-flex items-center gap-2" title="{{ pct }} %">
+    <span class="bar-track w-14"><span class="block h-full rounded-full {{ 'bg-emerald-500' if pct >= 75 else ('bg-amber-500' if pct >= 60 else 'bg-rose-500') }}" style="width: {{ pct }}%"></span></span>
+    <span class="font-mono text-xs text-slate-500 dark:text-slate-400">{{ pct }}</span>
+  </span>
+{%- endmacro %}
+
+{% macro empty_state() -%}
+  <div class="card grain flex flex-col items-center justify-center px-6 py-16 text-center">
+    <div class="mb-4">{% include "partials/logo.html" %}</div>
+    <h2 class="text-lg font-semibold">{{ t('empty.title') }}</h2>
+    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ t('empty.text') }}</p>
+    <code class="mt-4 rounded-xl bg-ink-950 px-4 py-2.5 font-mono text-sm text-slate-100">docker compose run --rm harvester harvest</code>
+  </div>
+{%- endmacro %}

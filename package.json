@@ -1,0 +1,13 @@
+{
+  "name": "iris-sig45-ui",
+  "private": true,
+  "description": "Build tooling for the dashboard stylesheet only (Tailwind CSS v4). The app itself is Python.",
+  "scripts": {
+    "build:css": "tailwindcss -i src/jll_harvester/web/static/src/app.css -o src/jll_harvester/web/static/dist/app.css --minify",
+    "watch:css": "tailwindcss -i src/jll_harvester/web/static/src/app.css -o src/jll_harvester/web/static/dist/app.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "4.1.11",
+    "tailwindcss": "4.1.11"
+  }
+}

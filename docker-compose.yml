@@ -1,0 +1,117 @@
+# IRIS-SIG-45 stack: PostGIS 16/3.4 + dashboard + scheduled harvester.
+#
+#   cp .env.example .env            # then set POSTGRES_PASSWORD (and optionally NOMINATIM_EMAIL)
+#   docker compose up -d --build    # db + web + scheduler + TLS proxy
+#   docker compose run --rm harvester harvest            # one-off live harvest
+#   docker compose run --rm harvester harvest --fixtures tests/fixtures/html   # offline demo
+#   docker compose --profile test run --rm tests         # full test suite incl. PostGIS
+
+x-app: &app
+  build: .
+  image: iris-sig45:latest
+  restart: unless-stopped
+  env_file: .env
+  environment:
+    IRIS_DATABASE_URL: postgresql://${POSTGRES_USER:-iris}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/${POSTGRES_DB:-iris}
+  depends_on:
+    db:
+      condition: service_healthy
+
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-iris}
+      POSTGRES_USER: ${POSTGRES_USER:-iris}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # not published publicly; reach it with `docker compose exec db psql` or an SSH tunnel
+    ports:
+      - "127.0.0.1:${DB_LOCAL_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    shm_size: 256mb
+
+  web:
+    <<: *app
+    command: sh -c "jll-harvester migrate && exec jll-harvester serve --host 0.0.0.0 --port 8000"
+    expose:
+      - "8000"
+
+  proxy:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
+      PLAIN_HTTP_HOST: ${PLAIN_HTTP_HOST:-127.0.0.1}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+
+  scheduler:
+    <<: *app
+    command: jll-harvester schedule --every ${HARVEST_INTERVAL_SECONDS:-21600}
+    volumes:
+      - rawdata:/app/var/raw
+    healthcheck:
+      disable: true
+
+  harvester:
+    <<: *app
+    profiles: ["tools"]
+    restart: "no"
+    entrypoint: ["jll-harvester"]
+    command: ["harvest"]
+    volumes:
+      - rawdata:/app/var/raw
+      - ./samples:/app/samples
+    healthcheck:
+      disable: true
+
+  # --- disposable test database + test runner (docker compose --profile test run --rm tests) ---
+  db-test:
+    image: postgis/postgis:16-3.4
+    profiles: ["test"]
+    environment:
+      POSTGRES_DB: iris_test
+      POSTGRES_USER: iris
+      POSTGRES_HOST_AUTH_METHOD: trust  # throwaway container on the internal network only
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U iris -d iris_test"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  tests:
+    image: iris-sig45:latest
+    build: .
+    profiles: ["test"]
+    environment:
+      IRIS_TEST_DATABASE_URL: postgresql://iris@db-test:5432/iris_test
+      COVERAGE_FILE: /tmp/.coverage
+    depends_on:
+      db-test:
+        condition: service_healthy
+    entrypoint: ["python", "-m", "pytest"]
+    command: ["-q", "-p", "no:cacheprovider", "--cov=jll_harvester", "--cov-report=term-missing:skip-covered"]
+    healthcheck:
+      disable: true
+
+volumes:
+  pgdata:
+  rawdata:
+  caddy_data:
+  caddy_config:

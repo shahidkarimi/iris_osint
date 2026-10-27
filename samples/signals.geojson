@@ -1,0 +1,623 @@
+{
+ "type": "FeatureCollection",
+ "name": "iris_sig45_signals",
+ "crs_note": "geometry in WGS84 (RFC 7946); x_25832/y_25832 hold the staged EPSG:25832 coordinates",
+ "features": [
+  {
+   "type": "Feature",
+   "id": 1,
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     6.438426,
+     51.115088
+    ]
+   },
+   "properties": {
+    "signal_id": 1,
+    "signal_type": "big_box_industrial_development",
+    "title": "Realterm kauft ehemaliges Zerres-Logistikzentrum in Mönchengladbach",
+    "published_at": "2026-07-16T06:00:00+00:00",
+    "municipality": "Mönchengladbach",
+    "district": null,
+    "street": "Regioparkring 4",
+    "geocode_precision": "address",
+    "area_sqm": 10500.0,
+    "plot_area_sqm": 37350.0,
+    "deal_type": "acquisition",
+    "source_url": "https://www.jll.com/de-de/newsroom/realterm-kauft-ehemaliges-zerres-logistikzentrum-in-moenchengladbach",
+    "classification_confidence": 0.95,
+    "x_25832": 320712.99,
+    "y_25832": 5665743.81
+   }
+  },
+  {
+   "type": "Feature",
+   "id": 2,
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     7.465279,
+     51.514227
+    ]
+   },
+   "properties": {
+    "signal_id": 2,
+    "signal_type": "big_box_industrial_development",
+    "title": "Logistikdienstleister mietet 37.300 m² Nutzfläche im Segro Park Dortmund",
+    "published_at": "2026-06-24T06:00:00+00:00",
+    "municipality": "Dortmund",
+    "district": null,
+    "street": null,
+    "geocode_precision": "municipality",
+    "area_sqm": 37300.0,
+    "plot_area_sqm": null,
+    "deal_type": "letting",
+    "source_url": "https://www.jll.com/de-de/newsroom/logistikdienstleister-mietet-37300-m-nutzflaeche-im-segro-park-dortmund",
+    "classification_confidence": 1.0,
+    "x_25832": 393506.83,
+    "y_25832": 5708127.98
+   }
+  },
+  {
+   "type": "Feature",
+   "id": 3,
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     10.646564,
+     52.521963
+    ]
+   },
+   "properties": {
+    "signal_id": 3,
+    "signal_type": "big_box_industrial_development",
+    "title": "Schnellecke verkauft Logistikimmobilie in Sassenburg an Periskop",
+    "published_at": "2026-06-19T06:00:00+00:00",
+    "municipality": "Sassenburg",
+    "district": null,
+    "street": null,
+    "geocode_precision": "municipality",
+    "area_sqm": 49000.0,
+    "plot_area_sqm": 93000.0,
+    "deal_type": "disposal",
+    "source_url": "https://www.jll.com/de-de/newsroom/schnellecke-verkauft-logistikimmobilie-in-sassenburg-an-periskop",
+    "classification_confidence": 0.95,
+    "x_25832": 611714.1,
+    "y_25832": 5820369.07
+   }
+  },
+  {
+   "type": "Feature",
+   "id": 4,
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     10.274528,
+     48.468978
+    ]
+   },
+   "properties": {
+    "signal_id": 4,
+    "signal_type": "big_box_industrial_development",
+    "title": "MAN mietet rund 18.000 m² im Industriepark in Günzburg",
+    "published_at": "2026-06-12T06:00:00+00:00",
+    "municipality": "Günzburg",
+    "district": null,
+    "street": null,
+    "geocode_precision": "municipality",
+    "area_sqm": 18000.0,
+    "plot_area_sqm": null,
+    "deal_type": "letting",
+    "source_url": "https://www.jll.com/de-de/newsroom/man-mietet-rund-18000-m2-im-industriepark-in-guenzburg",
+    "classification_confidence": 1.0,
+    "x_25832": 594208.24,
+    "y_25832": 5369211.81
+   }
+  },
+  {
+   "type": "Feature",
+   "id": 5,
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     13.395131,
+     52.517389
+    ]
+   },
+   "properties": {
+    "signal_id": 5,
+    "signal_type": "big_box_industrial_development",
+    "title": "Chinesischer Handelskonzern mietet 41.200 m² Logistikfläche bei Berlin",
+    "published_at": "2026-04-08T06:30:00+00:00",
+    "municipality": "Berlin",
+    "district": null,
+    "street": null,
+    "geocode_precision": "municipality",
+    "area_sqm": 41200.0,
+    "plot_area_sqm": null,
+    "deal_type": "letting",
+    "source_url": "https://www.jll.com/de-de/newsroom/chinesischer-handelskonzern-mietet-41200m-logistikflaeche-bei-berlin",
+    "classification_confidence": 1.0,
+    "x_25832": 798161.38,
+    "y_25832": 5827668.78
+   }
+  },
+  {
+   "type": "Feature",
+   "id": 6,
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     11.077298,
+     49.453872
+    ]
+   },
+   "properties": {
+    "signal_id": 6,
+    "signal_type": "commercial_land_disposal",
+    "title": "uniVersa Versicherung kauft Grundstück in Nürnberg für neue Firmenzentrale",
+    "published_at": "2026-03-09T23:00:00+00:00",
+    "municipality": "Nürnberg",
+    "district": null,
+    "street": null,
+    "geocode_precision": "municipality",
+    "area_sqm": 24000.0,
+    "plot_area_sqm": 11000.0,
+    "deal_type": "acquisition",
+    "source_url": "https://www.jll.com/de-de/newsroom/universa-versicherung-kauft-grundstueck-in-nuernberg-fuer-neue-firmenzentrale",
+    "classification_confidence": 0.95,
+    "x_25832": 650548.38,
+    "y_25832": 5479986.8
+   }
+  },
+  {
+   "type": "Feature",
+   "id": 8,
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     10.297039,
+     49.256838
+    ]
+   },
+   "properties": {
+    "signal_id": 8,
+    "signal_type": "big_box_industrial_development",
+    "title": "Logistiker mietet rund 46.000 m² Hallenfläche in Mittelfranken",
+    "published_at": "2026-01-29T07:00:00+00:00",
+    "municipality": "Dombühl",
+    "district": null,
+    "street": null,
+    "geocode_precision": "municipality",
+    "area_sqm": 46000.0,
+    "plot_area_sqm": null,
+    "deal_type": "letting",
+    "source_url": "https://www.jll.com/de-de/newsroom/Logistiker-mietet-rund-46-000-m2-Hallenflaeche-in-Mittelfranken",
+    "classification_confidence": 0.85,
+    "x_25832": 594378.75,
+    "y_25832": 5456817.28
+   }
+  },
+  {
+   "type": "Feature",
+   "id": 9,
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     14.227375,
+     51.376745
+    ]
+   },
+   "properties": {
+    "signal_id": 9,
+    "signal_type": "big_box_industrial_development",
+    "title": "Schuhproduzent erwirbt ehemalige Möbelfabrik im sächsischen Wittichenau",
+    "published_at": "2025-11-20T07:00:00+00:00",
+    "municipality": "Wittichenau",
+    "district": null,
+    "street": null,
+    "geocode_precision": "municipality",
+    "area_sqm": 80000.0,
+    "plot_area_sqm": 160000.0,
+    "deal_type": "acquisition",
+    "source_url": "https://www.jll.com/de-de/newsroom/Schuhproduzent-erwirbt-ehemalige-Moebelfabrik-im-saechsischen-Wittichenau",
+    "classification_confidence": 0.5,
+    "x_25832": 863712.71,
+    "y_25832": 5704700.3
+   }
+  },
+  {
+   "type": "Feature",
+   "id": 10,
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     7.073109,
+     50.756101
+    ]
+   },
+   "properties": {
+    "signal_id": 10,
+    "signal_type": "commercial_land_disposal",
+    "title": "Univers Holding kauft und entwickelt Brownfield in Bonn-Auerberg",
+    "published_at": "2025-09-12T06:00:00+00:00",
+    "municipality": "Bonn",
+    "district": "Auerberg",
+    "street": null,
+    "geocode_precision": "district",
+    "area_sqm": null,
+    "plot_area_sqm": 50000.0,
+    "deal_type": "acquisition",
+    "source_url": "https://www.jll.com/de-de/newsroom/Univers-Holding-kauft-und-entwickelt-Brownfield-in-Bonn-Auerberg",
+    "classification_confidence": 0.85,
+    "x_25832": 364088.26,
+    "y_25832": 5624473.21
+   }
+  },
+  {
+   "type": "Feature",
+   "id": 12,
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     6.151439,
+     50.7631
+    ]
+   },
+   "properties": {
+    "signal_id": 12,
+    "signal_type": "big_box_industrial_development",
+    "title": "JLL leistet Projektsteuerung für Kosmetikunternehmen BABOR BEAUTY GROUP",
+    "published_at": "2024-11-18T23:00:00+00:00",
+    "municipality": "Aachen",
+    "district": null,
+    "street": "Neuenhofstraße 180",
+    "geocode_precision": "address",
+    "area_sqm": 26000.0,
+    "plot_area_sqm": null,
+    "deal_type": null,
+    "source_url": "https://www.jll.com/de-de/newsroom/jll-leistet-projektsteuerung-fuer-kosmetikunternehmen-babor-beauty-group",
+    "classification_confidence": 0.85,
+    "x_25832": 299117.98,
+    "y_25832": 5627350.41
+   }
+  },
+  {
+   "type": "Feature",
+   "id": 13,
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     9.524591,
+     51.295591
+    ]
+   },
+   "properties": {
+    "signal_id": 13,
+    "signal_type": "big_box_industrial_development",
+    "title": "JLL vermittelt 14.500 m² auf früherem AEG-Areal in Kassel",
+    "published_at": "2024-10-14T06:00:00+00:00",
+    "municipality": "Kassel",
+    "district": "Bettenhausen",
+    "street": "Lilienthalstraße 150",
+    "geocode_precision": "address",
+    "area_sqm": 14500.0,
+    "plot_area_sqm": 110000.0,
+    "deal_type": "letting",
+    "source_url": "https://www.jll.com/de-de/newsroom/jll-vermittelt-14500-m2-auf-frueherem-aeg-areal-in-kassel",
+    "classification_confidence": 0.85,
+    "x_25832": 536575.86,
+    "y_25832": 5682827.2
+   }
+  },
+  {
+   "type": "Feature",
+   "id": 14,
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.480044,
+     49.535848
+    ]
+   },
+   "properties": {
+    "signal_id": 14,
+    "signal_type": "commercial_land_disposal",
+    "title": "Unternehmensgruppe Streicher kauft Baugrundstück in Mannheim",
+    "published_at": "2024-08-29T06:00:00+00:00",
+    "municipality": "Mannheim",
+    "district": "Schönau",
+    "street": "Boehringerstraße 2",
+    "geocode_precision": "address",
+    "area_sqm": 4800.0,
+    "plot_area_sqm": 4800.0,
+    "deal_type": "acquisition",
+    "source_url": "https://www.jll.com/de-de/newsroom/unternehmensgruppe-streicher-kauft-baugrundstueck-in-mannheim",
+    "classification_confidence": 1.0,
+    "x_25832": 462378.87,
+    "y_25832": 5487156.16
+   }
+  },
+  {
+   "type": "Feature",
+   "id": 15,
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     6.973046,
+     50.936759
+    ]
+   },
+   "properties": {
+    "signal_id": 15,
+    "signal_type": "commercial_land_disposal",
+    "title": "Stadt Köln kauft das Nordgelände der Messehallen im Stadtteil Deutz",
+    "published_at": "2024-08-11T22:00:00+00:00",
+    "municipality": "Köln",
+    "district": "Deutz",
+    "street": null,
+    "geocode_precision": "district",
+    "area_sqm": 106000.0,
+    "plot_area_sqm": 165000.0,
+    "deal_type": "acquisition",
+    "source_url": "https://www.jll.com/de-de/newsroom/stadt-koeln-kauft-das-nordgelaende-der-messehallen-im-stadtteil-deutz",
+    "classification_confidence": 0.85,
+    "x_25832": 357582.28,
+    "y_25832": 5644748.61
+   }
+  },
+  {
+   "type": "Feature",
+   "id": 16,
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     10.095769,
+     53.517762
+    ]
+   },
+   "properties": {
+    "signal_id": 16,
+    "signal_type": "big_box_industrial_development",
+    "title": "Pandora eröffnet 18.000 m² großes Verteilzentrum in Hamburg",
+    "published_at": "2024-07-10T22:00:00+00:00",
+    "municipality": "Hamburg",
+    "district": "Billbrook",
+    "street": "Bredowstraße 34",
+    "geocode_precision": "address",
+    "area_sqm": 15000.0,
+    "plot_area_sqm": 18000.0,
+    "deal_type": "letting",
+    "source_url": "https://www.jll.com/de-de/newsroom/pandora-eroeffnet-verteilzentrum-in-hamburg",
+    "classification_confidence": 1.0,
+    "x_25832": 572653.45,
+    "y_25832": 5930428.46
+   }
+  },
+  {
+   "type": "Feature",
+   "id": 17,
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     7.258125,
+     51.467292
+    ]
+   },
+   "properties": {
+    "signal_id": 17,
+    "signal_type": "big_box_industrial_development",
+    "title": "Wärmepumpenhersteller Waterkotte mietet 17.600 m² in Bochum",
+    "published_at": "2024-04-17T22:00:00+00:00",
+    "municipality": "Bochum",
+    "district": null,
+    "street": "Sophie-Opel-Straße 20",
+    "geocode_precision": "address",
+    "area_sqm": 17600.0,
+    "plot_area_sqm": null,
+    "deal_type": "letting",
+    "source_url": "https://www.jll.com/de-de/newsroom/waermepumpenhersteller-waterkotte-mietet-in-bochum",
+    "classification_confidence": 1.0,
+    "x_25832": 379009.33,
+    "y_25832": 5703230.52
+   }
+  },
+  {
+   "type": "Feature",
+   "id": 11,
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.702551,
+     48.890934
+    ]
+   },
+   "properties": {
+    "signal_id": 11,
+    "signal_type": "big_box_industrial_development",
+    "title": "Logistikzentrum des Versandhauses Klingel in Pforzheim wechselt Besitzer",
+    "published_at": "2024-02-19T23:00:00+00:00",
+    "municipality": "Pforzheim",
+    "district": null,
+    "street": null,
+    "geocode_precision": "municipality",
+    "area_sqm": 170000.0,
+    "plot_area_sqm": 110000.0,
+    "deal_type": "acquisition",
+    "source_url": "https://www.jll.com/de-de/newsroom/logistikzentrum-des-versandhauses-klingel-in-pforzheim-wechselt-besitzer",
+    "classification_confidence": 1.0,
+    "x_25832": 478196.37,
+    "y_25832": 5415374.19
+   }
+  },
+  {
+   "type": "Feature",
+   "id": 18,
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     13.640723,
+     52.506237
+    ]
+   },
+   "properties": {
+    "signal_id": 18,
+    "signal_type": "big_box_industrial_development",
+    "title": "JLL berät bei Verkauf von 18.000 m² großer Logistikimmobilie nahe Berlin",
+    "published_at": "2024-02-19T18:30:00+00:00",
+    "municipality": "Hoppegarten",
+    "district": null,
+    "street": "Digitalstraße 4-6",
+    "geocode_precision": "street",
+    "area_sqm": 18000.0,
+    "plot_area_sqm": null,
+    "deal_type": "disposal",
+    "source_url": "https://www.jll.com/de-de/newsroom/jll-beraet-bei-verkauf-von-18000qm-grosser-logistikimmobilie-nahe-berlin",
+    "classification_confidence": 0.95,
+    "x_25832": 814892.67,
+    "y_25832": 5827473.55
+   }
+  },
+  {
+   "type": "Feature",
+   "id": 19,
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     6.84935,
+     51.297326
+    ]
+   },
+   "properties": {
+    "signal_id": 19,
+    "signal_type": "commercial_land_disposal",
+    "title": "Stadt Ratingen kauft Baugrundstück im Schwarzbach-Quartier",
+    "published_at": "2024-01-24T23:00:00+00:00",
+    "municipality": "Ratingen",
+    "district": null,
+    "street": null,
+    "geocode_precision": "municipality",
+    "area_sqm": null,
+    "plot_area_sqm": 80000.0,
+    "deal_type": "acquisition",
+    "source_url": "https://www.jll.com/de-de/newsroom/stadt-ratingen-kauft-baugrundstueck-im-schwarzbach-quartier",
+    "classification_confidence": 0.85,
+    "x_25832": 350063.97,
+    "y_25832": 5685086.02
+   }
+  },
+  {
+   "type": "Feature",
+   "id": 20,
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     6.889712,
+     50.989278
+    ]
+   },
+   "properties": {
+    "signal_id": 20,
+    "signal_type": "big_box_industrial_development",
+    "title": "BS Grundbesitz erwirbt ehemaligen Henkel-Logistikpark in Köln",
+    "published_at": "2024-01-14T23:00:00+00:00",
+    "municipality": "Köln",
+    "district": "Ossendorf",
+    "street": "Richard-Byrd-Straße 24",
+    "geocode_precision": "address",
+    "area_sqm": 11300.0,
+    "plot_area_sqm": 11300.0,
+    "deal_type": "acquisition",
+    "source_url": "https://www.jll.com/de-de/newsroom/bs-grundbesitz-erwirbt-ehemaligen-henkel-logistikpark-in-koeln",
+    "classification_confidence": 0.95,
+    "x_25832": 351894.76,
+    "y_25832": 5650752.36
+   }
+  },
+  {
+   "type": "Feature",
+   "id": 21,
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     6.973046,
+     50.936759
+    ]
+   },
+   "properties": {
+    "signal_id": 21,
+    "signal_type": "commercial_land_disposal",
+    "title": "Koelnmesse verkauft Grundstück samt Hochhaus im Kölner Stadtteil Deutz",
+    "published_at": "2023-11-12T23:00:00+00:00",
+    "municipality": "Köln",
+    "district": "Deutz",
+    "street": null,
+    "geocode_precision": "district",
+    "area_sqm": 45000.0,
+    "plot_area_sqm": 11250.0,
+    "deal_type": "disposal",
+    "source_url": "https://www.jll.com/de-de/newsroom/koelnmesse-verkauft-grundstueck-samt-hochhaus-im-koelner-stadtteil-deutz",
+    "classification_confidence": 0.95,
+    "x_25832": 357582.28,
+    "y_25832": 5644748.61
+   }
+  },
+  {
+   "type": "Feature",
+   "id": 22,
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.650022,
+     49.407942
+    ]
+   },
+   "properties": {
+    "signal_id": 22,
+    "signal_type": "commercial_land_disposal",
+    "title": "Henkel verkauft zwei Gewerbegrundstücke in Heidelberg",
+    "published_at": "2023-01-15T23:00:00+00:00",
+    "municipality": "Heidelberg",
+    "district": null,
+    "street": "Hans-Bunte-Straße 2",
+    "geocode_precision": "address",
+    "area_sqm": 20000.0,
+    "plot_area_sqm": 20000.0,
+    "deal_type": "disposal",
+    "source_url": "https://www.jll.com/de-de/newsroom/henkel-verkauft-zwei-gewerbegrundstuecke-in-heidelberg",
+    "classification_confidence": 0.9,
+    "x_25832": 474611.47,
+    "y_25832": 5472865.23
+   }
+  },
+  {
+   "type": "Feature",
+   "id": 23,
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     9.964173,
+     50.145486
+    ]
+   },
+   "properties": {
+    "signal_id": 23,
+    "signal_type": "commercial_land_disposal",
+    "title": "CIC AG kauft Schaeffler-Gelände im unterfränkischen Elfershausen",
+    "published_at": "2022-11-08T23:00:00+00:00",
+    "municipality": "Elfershausen",
+    "district": null,
+    "street": null,
+    "geocode_precision": "municipality",
+    "area_sqm": 12650.0,
+    "plot_area_sqm": 41000.0,
+    "deal_type": "acquisition",
+    "source_url": "https://www.jll.com/de-de/newsroom/cic-ag-kauft-schaeffler-gelaende-im-unterfraenkischen-elfershausen",
+    "classification_confidence": 1.0,
+    "x_25832": 568890.1,
+    "y_25832": 5555251.72
+   }
+  }
+ ]
+}

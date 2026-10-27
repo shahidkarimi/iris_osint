@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}{{ t('nav.method') }}{% endblock %}
+
+{% block content %}
+<div class="grid gap-10 lg:grid-cols-[14rem_1fr]">
+  <nav class="hidden lg:block" aria-label="Inhalt">
+    <div class="sticky top-24 space-y-1 text-sm">
+      {% for anchor, de, en in [('quelle','Quelle & Zugriff','Source & access'), ('pipeline','Pipeline','Pipeline'), ('klassifikation','Klassifikation','Classification'), ('verortung','Verortung','Location'), ('staging','Staging & Idempotenz','Staging & idempotency'), ('grenzen','Grenzen','Limitations')] %}
+        <a href="#{{ anchor }}" class="block rounded-lg px-3 py-1.5 text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-white">{{ de if locale == 'de' else en }}</a>
+      {% endfor %}
+    </div>
+  </nav>
+
+  <article class="prose-iris max-w-3xl">
+    <p class="kicker">{{ task_id }}</p>
+    <h1 class="mt-2 text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">{{ t('nav.method') }}</h1>
+
+    {% if locale == 'de' %}
+    <p class="text-lg text-slate-600 dark:text-slate-400">Ziel: <strong>Gewerbegrundstücks-Transaktionen</strong> und <strong>Big-Box-Industrie-/Logistikvorhaben</strong> aus dem öffentlichen Research- &amp; Transaktions-Newsroom von JLL Deutschland erkennen, verorten und nachvollziehbar in <code>iris_staging.signal_ingest</code> laden.</p>
+
+    <h2 id="quelle">Quelle &amp; Zugriff</h2>
+    <ul>
+      <li>Der Brief nennt <code>{{ settings.brief_endpoint }}</code>. Diese URL antwortet heute mit <strong>301</strong> auf <code>jll.com/de-de/insights/market-dynamics</code> — geprüft bei jedem Lauf und im Run-Ledger protokolliert.</li>
+      <li>Die Listenansicht wird clientseitig gerendert; „Mehr laden“ paginiert per Query-String. <code>robots.txt</code> verbietet genau das (<code>Disallow: /*?</code>). Zugriffsbeschränkungen werden nicht umgangen.</li>
+      <li>Rechtmäßige Alternative: die in <code>robots.txt</code> verlinkte Sitemap <code>{{ settings.sitemap_url }}</code>. Sie listet alle Pressemitteilungen (<code>/de-de/newsroom/…</code>) und Research-Seiten mit <code>&lt;lastmod&gt;</code> — vollständige Enumeration ohne Pagination und inkrementelle Läufe.</li>
+      <li>Höflicher Crawler: eigener User-Agent, ≥ {{ settings.request_delay_seconds }} s Abstand, RFC-9309-konforme robots-Auswertung (inkl. Wildcards), Retries mit Backoff und <code>Retry-After</code>.</li>
+    </ul>
+
+    <h2 id="pipeline">Pipeline</h2>
+    <p><code>discover → inkrementell filtern → fetch → parse → klassifizieren → verorten → validieren → idempotent laden</code>. Jedes Dokument läuft in einer eigenen Transaktion; Fehler werden als <code>ingest_issue</code> erfasst und brechen den Lauf nicht ab.</p>
+    <ul>
+      <li><strong>Parsing:</strong> Titel und <strong>Veröffentlichungsdatum aus JSON-LD</strong> (<code>NewsArticle.datePublished</code>), gegengeprüft gegen die Dateline („MÖNCHENGLADBACH, 16. Juli 2026 –“). Abweichungen werden markiert, nie stillschweigend übernommen.</li>
+      <li><strong>Taxonomie:</strong> JLLs eigene Tags (<code>news/transactions</code>, <code>property-types/industrial-and-logistics</code>, …) aus <code>&lt;meta name="ch.tagcloud"&gt;</code>.</li>
+    </ul>
+
+    <h2 id="klassifikation">Klassifikation</h2>
+    <p>Transparente, deutschsprachige Regeln statt Black-Box — jede Entscheidung speichert ausgelöste Regeln, Scores und Belegstellen.</p>
+    <h3>Gewerbegrundstück-Transaktion</h3>
+    <ul>
+      <li>Ein <em>Grundstück, Areal, Gelände, Brownfield</em> wechselt den Eigentümer (erwirbt, kauft, verkauft, veräußert).</li>
+      <li>Abzug, wenn das Objekt ein Bestandsgebäude ist („Bürogebäude“, „Fachmarktzentrum“) oder die Nutzung rein wohnwirtschaftlich ist.</li>
+    </ul>
+    <h3>Big-Box Industrie &amp; Logistik</h3>
+    <ul>
+      <li>Industrie-/Logistik-Bezug (Taxonomie oder Begriffe wie <em>Logistikzentrum, Produktion, Light Industrial, Rechenzentrum</em>) <strong>und</strong></li>
+      <li>Projektentwicklung (Neubau, Baustart, spekulativ, Revitalisierung …) <strong>oder</strong> Big-Box-Größe ≥ {{ fmt_number(settings.big_box_min_sqm, locale) }} m².</li>
+    </ul>
+    <p>Ausgeschlossen mit Begründung: Personalmeldungen, aggregierte Marktberichte, Büro-/Einzelhandels-/Wohn-Deals, Signale außerhalb Deutschlands, Konfidenz &lt; {{ settings.min_classification_confidence }}.</p>
+
+    <h2 id="verortung">Verortung (EPSG:25832)</h2>
+    <ul>
+      <li>Ortsangaben werden kontextbasiert erkannt: Adresse („am Regioparkring 4“), Stadtteil („Bonn-Auerberg“, „im Bonner Stadtteil …“), Präposition („in Mönchengladbach“), Demonym („Kölner …“), Dateline.</li>
+      <li>Geocoding so genau wie möglich: Nominatim (OSM, Nutzungsrichtlinie eingehalten, Cache) → Offline-Gazetteer GeoNames (Gemeinde/Stadtteil).</li>
+      <li><strong>Validierung:</strong> endlich, innerhalb Deutschlands, ≤ 30 km von der erwarteten Gemeinde, innerhalb des EPSG:25832-Gültigkeitsbereichs. Sonst <code>invalid</code> — der Punkt wird verworfen, der Grund gespeichert.</li>
+      <li><strong>Mehrdeutig</strong> (z. B. Portfolio in mehreren Städten) oder nur Region („in Oberbayern“) → kein geratener Punkt, Kandidaten werden dokumentiert.</li>
+    </ul>
+
+    <h2 id="staging">Staging &amp; Idempotenz</h2>
+    <ul>
+      <li>Natürlicher Schlüssel <code>(source_system, source_record_id)</code> mit UNIQUE-Constraint — Wiederholungsläufe erzeugen keine Duplikate.</li>
+      <li><code>content_hash</code> über die fachlichen Felder: unverändert → nur <code>last_seen_at</code>; geändert → Update mit <code>record_version + 1</code>; nicht mehr relevant → <code>retracted_at</code> statt Löschung.</li>
+      <li>DB-Constraints erzwingen: Punkt ⇔ <code>resolved</code>, gültige Geometrie innerhalb Deutschlands, SRID 25832.</li>
+    </ul>
+
+    <h2 id="grenzen">Grenzen</h2>
+    <ul>
+      <li>Regelbasierte Klassifikation ist auf die Sprache von JLL-Pressemitteilungen abgestimmt; Grenzfälle erhalten niedrige Konfidenz und Qualitäts-Flags.</li>
+      <li>Adressgenaue Punkte nur, wenn die Quelle eine Adresse nennt; sonst Stadtteil- oder Gemeindezentroid (als Flag sichtbar).</li>
+      <li>Die Dateline nennt oft das JLL-Büro, nicht den Standort — sie wird daher nur nachrangig genutzt und markiert.</li>
+    </ul>
+    {% else %}
+    <p class="text-lg text-slate-600 dark:text-slate-400">Goal: detect, locate and traceably load <strong>commercial land disposals</strong> and <strong>big-box industrial/logistics development</strong> signals from JLL Germany's public research &amp; transactions newsroom into <code>iris_staging.signal_ingest</code>.</p>
+    <h2 id="quelle">Source &amp; access</h2>
+    <ul>
+      <li>The brief names <code>{{ settings.brief_endpoint }}</code>; it now returns <strong>301</strong> to <code>jll.com/de-de/insights/market-dynamics</code> — verified on every run and logged in the run ledger.</li>
+      <li>The listing is client-side rendered and paginates via query strings, which <code>robots.txt</code> forbids (<code>Disallow: /*?</code>). Access restrictions are not bypassed.</li>
+      <li>Lawful alternative: the robots-advertised sitemap <code>{{ settings.sitemap_url }}</code> with <code>&lt;lastmod&gt;</code> — complete enumeration without pagination plus incremental runs.</li>
+      <li>Polite crawler: identifying UA, ≥ {{ settings.request_delay_seconds }} s spacing, RFC 9309 robots evaluation (wildcards), retries with backoff and <code>Retry-After</code>.</li>
+    </ul>
+    <h2 id="pipeline">Pipeline</h2>
+    <p><code>discover → incremental filter → fetch → parse → classify → locate → validate → idempotent load</code>; one transaction per document, failures become <code>ingest_issue</code> rows and never abort the run. Publication dates come from JSON-LD and are cross-checked against the dateline.</p>
+    <h2 id="klassifikation">Classification</h2>
+    <p>Transparent German-language rules; every decision stores rules fired, scores and evidence snippets. Land disposal = a plot/site/brownfield changes hands (penalised when the object is a standing building or residential). Big-box = industrial/logistics context <strong>and</strong> development cues <strong>or</strong> ≥ {{ fmt_number(settings.big_box_min_sqm, locale) }} m².</p>
+    <h2 id="verortung">Location (EPSG:25832)</h2>
+    <p>Context-aware place extraction (address, district, preposition, demonym, dateline) → Nominatim (policy-compliant, cached) → offline GeoNames gazetteer. Points must be finite, in Germany, ≤ 30 km from the expected municipality and inside the EPSG:25832 area of use, otherwise they are rejected as <code>invalid</code>. Multi-site or region-only mentions stay without a point and keep their candidates.</p>
+    <h2 id="staging">Staging &amp; idempotency</h2>
+    <p>UNIQUE natural key, content hash (unchanged → touch only; changed → <code>record_version + 1</code>; no longer relevant → <code>retracted_at</code>), DB constraints for geometry/status consistency.</p>
+    <h2 id="grenzen">Limitations</h2>
+    <p>Rules are tuned to JLL press-release language; address-level points only where the source names an address; datelines often name the issuing JLL office and are therefore used last and flagged.</p>
+    {% endif %}
+  </article>
+</div>
+{% endblock %}

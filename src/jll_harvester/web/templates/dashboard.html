@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import type_chip, geo_chip, run_chip, empty_state with context %}
+{% block title %}{{ t('nav.dashboard') }}{% endblock %}
+{% block head %}<link rel="stylesheet" href="/static/vendor/maplibre/maplibre-gl.css">{% endblock %}
+
+{% block content %}
+{% set s = summary %}
+<section class="relative mb-8 grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
+  <div class="animate-fade-up">
+    <p class="kicker">{{ task_id }} · iris_staging.signal_ingest</p>
+    <h1 class="mt-2 max-w-3xl text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+      {% if locale == 'de' %}Lagebild: Gewerbegrundstücke &amp; Big-Box-Industrie in Deutschland{% else %}Situation picture: commercial land &amp; big-box industrial in Germany{% endif %}
+    </h1>
+    <p class="mt-3 max-w-2xl text-[15px] leading-relaxed text-slate-600 dark:text-slate-400">
+      {% if locale == 'de' %}
+        Automatisch erfasste Signale aus dem Newsroom von JLL Deutschland — klassifiziert, verortet in <span class="font-mono text-[13px]">EPSG:25832</span> und idempotent in PostGIS-Staging geladen.
+      {% else %}
+        Signals harvested from JLL Germany's newsroom — classified, located in <span class="font-mono text-[13px]">EPSG:25832</span> and loaded idempotently into PostGIS staging.
+      {% endif %}
+    </p>
+  </div>
+  {% if run %}
+  {% set shown = good_run or run %}
+  <div class="card flex items-center gap-4 px-4 py-3 animate-fade-up">
+    <div>
+      <div class="kicker">{{ t('dash.lastrun_ok') if good_run else t('dash.lastrun') }}</div>
+      <div class="mt-1 flex items-center gap-2 text-sm font-medium">
+        {{ run_chip(shown.status) }}
+        <span>{{ fmt_date(shown.started_at, locale, True) }}</span>
+        <span class="chip chip-muted font-mono text-[10px]">{{ shown.mode }}</span>
+      </div>
+      {% if good_run and run.run_id != good_run.run_id and run.status == 'failed' %}
+        <div class="mt-1.5 max-w-xs text-[11px] leading-snug text-slate-500 dark:text-slate-400">
+          {{ t('dash.last_attempt') }} {{ fmt_date(run.started_at, locale, True) }}:
+          <span class="font-mono text-rose-600 dark:text-rose-400">{{ 'access_denied (HTTP 403)' if 'access_denied' in (run.error or '') else run.status }}</span>
+        </div>
+      {% endif %}
+    </div>
+    <a href="/qualitaet" class="btn btn-ghost text-xs">{{ t('nav.quality') }} →</a>
+  </div>
+  {% endif %}
+</section>
+
+{% if not s.total %}
+  {{ empty_state() }}
+{% else %}
+
+<!-- KPIs -->
+<section class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+  <div class="card p-5 animate-fade-up">
+    <div class="kicker">{{ t('kpi.signals') }}</div>
+    <div class="mt-2 text-4xl font-semibold tracking-tight tabular-nums">{{ s.total }}</div>
+    {% set land_pct = (100 * s.land / s.total) if s.total else 0 %}
+    <div class="mt-4 flex h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-white/[0.06]">
+      <span class="bg-land-500" style="width: {{ land_pct }}%"></span>
+      <span class="bg-box-500" style="width: {{ 100 - land_pct }}%"></span>
+    </div>
+    <div class="mt-2 flex justify-between text-xs text-slate-500 dark:text-slate-400">
+      <span class="flex items-center gap-1.5"><span class="dot-land"></span>{{ s.land }} {{ t('type.short.commercial_land_disposal') }}</span>
+      <span class="flex items-center gap-1.5"><span class="dot-box"></span>{{ s.bigbox }} {{ t('type.short.big_box_industrial_development') }}</span>
+    </div>
+  </div>
+
+  <div class="card p-5 animate-fade-up [animation-delay:60ms]">
+    <div class="kicker">{{ t('kpi.geocoded') }}</div>
+    {% set geo_pct = (100 * s.resolved / s.total) | round | int %}
+    <div class="mt-2 flex items-baseline gap-2">
+      <span class="text-4xl font-semibold tracking-tight tabular-nums">{{ geo_pct }}<span class="text-2xl text-slate-400">%</span></span>
+      <span class="text-sm text-slate-500 dark:text-slate-400">{{ s.resolved }}/{{ s.total }}</span>
+    </div>
+    <div class="mt-4 bar-track"><span class="block h-full rounded-full bg-emerald-500" style="width: {{ geo_pct }}%"></span></div>
+    <div class="mt-2 text-xs text-slate-500 dark:text-slate-400">{{ s.precise }} {{ t('kpi.precise') }} · {{ s.ambiguous }} {{ t('geo.ambiguous') }} · {{ s.unresolved }} {{ t('geo.unresolved') }}</div>
+  </div>
+
+  <div class="card p-5 animate-fade-up [animation-delay:120ms]">
+    <div class="kicker">{{ t('kpi.plot_area') }}</div>
+    <div class="mt-2 text-4xl font-semibold tracking-tight tabular-nums">{{ fmt_number(s.plot_sqm / 10000, locale, 1) }}<span class="ml-1 text-2xl text-slate-400">ha</span></div>
+    <div class="mt-4 text-xs text-slate-500 dark:text-slate-400">{{ s.municipalities }} {{ t('kpi.municipalities') }}</div>
+  </div>
+
+  <div class="card p-5 animate-fade-up [animation-delay:180ms]">
+    <div class="kicker">{{ t('kpi.bigbox_area') }}</div>
+    <div class="mt-2 text-4xl font-semibold tracking-tight tabular-nums">{{ fmt_number(s.bigbox_sqm / 1000, locale, 0) }}<span class="ml-1 text-2xl text-slate-400">{{ "Tsd. m²" if locale == "de" else "k m²" }}</span></div>
+    <div class="mt-4 text-xs text-slate-500 dark:text-slate-400">{{ t('sig.published') }}: {{ fmt_date(s.latest_published, locale) }}</div>
+  </div>
+</section>
+
+<!-- map + timeline -->
+<section class="mt-6 grid gap-6 lg:grid-cols-5">
+  <div class="card overflow-hidden lg:col-span-3">
+    <div class="card-head">
+      <h2 class="card-title">{{ t('dash.map') }}</h2>
+      <a href="/karte" class="text-sm font-medium text-box-600 hover:underline dark:text-box-400">{{ t('dash.open_map') }} →</a>
+    </div>
+    <div class="relative h-[420px]" data-signals-map data-mode="preview" data-src="/api/signals.geojson"
+         data-style-light="{{ map_style }}" data-style-dark="{{ map_style_dark }}"
+         data-i18n='{{ {"commercial_land_disposal": t("type.commercial_land_disposal"), "big_box_industrial_development": t("type.big_box_industrial_development"), "prec.address": t("prec.address"), "prec.street": t("prec.street"), "prec.district": t("prec.district"), "prec.municipality": t("prec.municipality")} | tojson | forceescape }}'></div>
+  </div>
+
+  <div class="flex flex-col gap-6 lg:col-span-2">
+    <div class="card">
+      <div class="card-head"><h2 class="card-title">{{ t('dash.timeline') }}</h2></div>
+      <div class="px-5 pt-4 pb-5">
+        {% set tl = s.timeline[-12:] %}
+        {% set peak = [1] + tl | map(attribute='land') | list %}
+        {% set ns = namespace(maxv=1) %}
+        {% for r in tl %}{% if r.land + r.bigbox > ns.maxv %}{% set ns.maxv = r.land + r.bigbox %}{% endif %}{% endfor %}
+        <div class="flex h-40 items-end gap-1.5" role="img" aria-label="{{ t('dash.timeline') }}">
+          {% for r in tl %}
+            <div class="group relative flex h-full flex-1 flex-col justify-end" title="{{ r.period }}: {{ r.land }} / {{ r.bigbox }}">
+              <div class="rounded-t-[3px] bg-box-500 transition group-hover:brightness-110" style="height: {{ 100 * r.bigbox / ns.maxv }}%"></div>
+              <div class="bg-land-500 transition group-hover:brightness-110 {{ 'rounded-t-[3px]' if not r.bigbox }}" style="height: {{ 100 * r.land / ns.maxv }}%"></div>
+              <span class="pointer-events-none absolute -top-6 left-1/2 hidden -translate-x-1/2 rounded-md bg-ink-950 px-1.5 py-0.5 font-mono text-[10px] whitespace-nowrap text-white group-hover:block">{{ r.land + r.bigbox }}</span>
+            </div>
+          {% endfor %}
+        </div>
+        <div class="mt-2 flex justify-between font-mono text-[10px] text-slate-400">
+          <span>{{ tl[0].period if tl else '' }}</span><span>{{ tl[-1].period if tl else '' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2 class="card-title">{{ t('dash.precision') }}</h2></div>
+      <ul class="space-y-3 px-5 py-4">
+        {% for r in s.by_precision %}
+          <li>
+            <div class="flex justify-between text-sm"><span>{{ t('prec.' ~ r.k) }}</span><span class="font-mono text-xs text-slate-500">{{ r.n }}</span></div>
+            <div class="mt-1 bar-track"><span class="block h-full rounded-full {{ 'bg-emerald-500' if r.k in ['address','street'] else ('bg-sky-500' if r.k == 'district' else ('bg-slate-400' if r.k == 'municipality' else 'bg-amber-500')) }}" style="width: {{ 100 * r.n / s.total }}%"></span></div>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- latest + towns + pipeline -->
+<section class="mt-6 grid gap-6 lg:grid-cols-3">
+  <div class="card lg:col-span-2">
+    <div class="card-head">
+      <h2 class="card-title">{{ t('dash.latest') }}</h2>
+      <a href="/signale" class="text-sm font-medium text-box-600 hover:underline dark:text-box-400">{{ t('dash.all_signals') }} →</a>
+    </div>
+    <ul class="divide-y divide-slate-100 dark:divide-white/[0.06]">
+      {% for r in latest %}
+      <li>
+        <a href="/signale/{{ r.signal_id }}" class="group flex items-start gap-4 px-5 py-4 transition hover:bg-slate-50 dark:hover:bg-white/[0.03]">
+          <div class="w-20 shrink-0 pt-0.5 font-mono text-xs text-slate-500 dark:text-slate-400">{{ fmt_date(r.published_at, locale) }}</div>
+          <div class="min-w-0 flex-1">
+            <div class="font-medium leading-snug text-slate-900 group-hover:underline dark:text-slate-100">{{ r.title }}</div>
+            <div class="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+              {{ type_chip(r.signal_type, True) }}
+              {{ geo_chip(r.geocode_status, r.geocode_precision) }}
+              {% if r.municipality %}<span>{{ r.municipality }}{% if r.district %} · {{ r.district }}{% endif %}</span>{% endif %}
+              {% if r.area_sqm or r.plot_area_sqm %}<span class="font-mono">{{ fmt_area(r.area_sqm or r.plot_area_sqm, locale) }}</span>{% endif %}
+            </div>
+          </div>
+          <svg class="mt-1 size-4 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-slate-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.2 14.8a.75.75 0 0 1 0-1.06L10.94 10 7.2 6.26a.75.75 0 1 1 1.06-1.06l4.27 4.27a.75.75 0 0 1 0 1.06l-4.27 4.27a.75.75 0 0 1-1.06 0Z" clip-rule="evenodd"/></svg>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <div class="flex flex-col gap-6">
+    <div class="card">
+      <div class="card-head"><h2 class="card-title">{{ t('dash.towns') }}</h2></div>
+      <ul class="space-y-2.5 px-5 py-4">
+        {% set top = s.top_towns[0].n if s.top_towns else 1 %}
+        {% for r in s.top_towns %}
+          <li>
+            <a href="/signale?ort={{ r.k | urlencode }}" class="group block">
+              <div class="flex justify-between text-sm"><span class="group-hover:underline">{{ r.k }}</span><span class="font-mono text-xs text-slate-500">{{ r.n }}</span></div>
+              <div class="mt-1 bar-track"><span class="block h-full rounded-full bg-slate-800 dark:bg-slate-300" style="width: {{ 100 * r.n / top }}%"></span></div>
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2 class="card-title">{{ t('dash.corpus') }}</h2></div>
+      {% set total_docs = corpus.decisions | sum(attribute='n') %}
+      <div class="px-5 py-4">
+        <div class="text-sm text-slate-600 dark:text-slate-400">
+          {% if locale == 'de' %}{{ total_docs }} Dokumente geprüft → <strong class="text-slate-900 dark:text-white">{{ s.total }} Signale</strong>{% else %}{{ total_docs }} documents assessed → <strong class="text-slate-900 dark:text-white">{{ s.total }} signals</strong>{% endif %}
+        </div>
+        <ul class="mt-3 space-y-1.5 text-sm">
+          {% for r in corpus.reasons[:7] %}
+            <li class="flex justify-between gap-3"><span class="truncate font-mono text-xs text-slate-500 dark:text-slate-400">{{ r.k }}</span><span class="font-mono text-xs">{{ r.n }}</span></li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/vendor/maplibre/maplibre-gl.js" defer></script>
+<script src="/static/js/map.js" defer></script>
+{% endblock %}

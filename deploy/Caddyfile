@@ -1,0 +1,23 @@
+# TLS-terminating reverse proxy. SITE_ADDRESS is a hostname (automatic Let's Encrypt
+# certificate, e.g. 201-79-3-160.sslip.io) or ":80" for plain HTTP on a private network.
+# PLAIN_HTTP_HOST (e.g. the server's bare IP) is additionally served over plain HTTP,
+# since no certificate can be issued for an IP and Caddy would otherwise redirect it to HTTPS.
+
+(app) {
+	encode zstd gzip
+	reverse_proxy web:8000
+	header -Server
+	log {
+		output stdout
+		format console
+	}
+}
+
+{$SITE_ADDRESS::80} {
+	import app
+	header Strict-Transport-Security "max-age=31536000"
+}
+
+http://{$PLAIN_HTTP_HOST:127.0.0.1} {
+	import app
+}

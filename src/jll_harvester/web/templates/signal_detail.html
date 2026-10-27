@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import type_chip, geo_chip, confidence with context %}
+{% block title %}{{ s.title }}{% endblock %}
+{% block head %}<link rel="stylesheet" href="/static/vendor/maplibre/maplibre-gl.css">{% endblock %}
+
+{% block content %}
+{% set ev = s.classification_evidence or {} %}
+{% set art = (s.payload or {}).get('article', {}) %}
+<a href="/signale" class="mb-5 inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 dark:hover:text-white">← {{ t('det.back') }}</a>
+
+<header class="mb-8 animate-fade-up">
+  <div class="flex flex-wrap items-center gap-2">
+    {{ type_chip(s.signal_type) }}
+    {{ geo_chip(s.geocode_status, s.geocode_precision) }}
+    {% if s.deal_type %}<span class="chip chip-muted">{{ t('deal.' ~ s.deal_type) }}</span>{% endif %}
+    {% if s.retracted_at %}<span class="chip chip-err">retracted · {{ s.retraction_reason }}</span>{% endif %}
+    <span class="font-mono text-xs text-slate-400">#{{ s.signal_id }} · v{{ s.record_version }}</span>
+  </div>
+  <h1 class="mt-3 max-w-4xl text-2xl font-semibold tracking-tight text-balance sm:text-3xl">{{ s.title }}</h1>
+  {% if s.summary %}<p class="mt-2 max-w-3xl text-[15px] text-slate-600 dark:text-slate-400">{{ s.summary }}</p>{% endif %}
+  <div class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-500 dark:text-slate-400">
+    <span>{{ t('sig.published') }} <strong class="font-medium text-slate-900 dark:text-white">{{ fmt_date(s.published_at, locale) }}</strong> <span class="font-mono text-xs">({{ s.published_at_source or '—' }})</span></span>
+    {% if s.municipality %}<span>📍 {{ s.location_text or s.municipality }}</span>{% endif %}
+    <a href="{{ s.source_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-ghost py-1.5 text-xs">{{ t('det.open_source') }} ↗</a>
+  </div>
+</header>
+
+<div class="grid gap-6 lg:grid-cols-3">
+  <div class="space-y-6 lg:col-span-2">
+
+    <!-- key facts -->
+    <section class="card">
+      <div class="card-head"><h2 class="card-title">{{ t('det.facts') }}</h2></div>
+      <dl class="grid grid-cols-2 gap-px overflow-hidden rounded-b-2xl bg-slate-100 sm:grid-cols-4 dark:bg-white/[0.06]">
+        {% set facts = [
+          (t('sig.floor'), fmt_area(s.area_sqm, locale, hectares=False)),
+          (t('sig.plot'), fmt_area(s.plot_area_sqm, locale)),
+          (t('det.deal'), t('deal.' ~ (s.deal_type or 'unknown'))),
+          (t('sig.confidence'), ((s.classification_confidence | float) * 100) | round | int ~ ' %'),
+        ] %}
+        {% for label, value in facts %}
+          <div class="bg-white px-5 py-4 dark:bg-ink-900">
+            <dt class="text-xs text-slate-500 dark:text-slate-400">{{ label }}</dt>
+            <dd class="mt-1 text-lg font-semibold tracking-tight tabular-nums">{{ value }}</dd>
+          </div>
+        {% endfor %}
+      </dl>
+    </section>
+
+    <!-- excerpt -->
+    {% if art.lead %}
+    <section class="card">
+      <div class="card-head"><h2 class="card-title">{{ t('det.lead') }}</h2><span class="font-mono text-xs text-slate-400">{{ art.dateline_place or '' }}</span></div>
+      <div class="px-5 py-4 text-[15px] leading-7 text-slate-700 dark:text-slate-300">
+        <p>{{ art.lead }}</p>
+        {% if (s.source_tags or []) %}
+        <div class="mt-4 flex flex-wrap gap-1.5">
+          {% for tag in s.source_tags if tag.startswith(('news/', 'property-types/', 'location/global/emea/europe/germany')) %}
+            <span class="chip chip-muted font-mono text-[10px]">{{ tag }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    </section>
+    {% endif %}
+
+    <!-- classification -->
+    <section class="card">
+      <div class="card-head"><h2 class="card-title">{{ t('det.classification') }}</h2>{{ confidence(s.classification_confidence | float) }}</div>
+      <div class="grid gap-5 px-5 py-4 md:grid-cols-2">
+        {% for stype in ['commercial_land_disposal', 'big_box_industrial_development'] %}
+          {% set score = (ev.get('scores') or {}).get(stype, 0) %}
+          {% set rules = (ev.get('rules') or {}).get(stype, []) %}
+          <div class="rounded-xl p-4 ring-1 ring-inset {{ 'ring-land-400/40 bg-land-50/50 dark:bg-land-500/5' if stype == s.signal_type and stype == 'commercial_land_disposal' else ('ring-box-400/40 bg-box-50/50 dark:bg-box-500/5' if stype == s.signal_type else 'ring-slate-200 dark:ring-white/10') }}">
+            <div class="flex items-center justify-between gap-2">
+              {{ type_chip(stype, True) }}
+              <span class="font-mono text-sm font-semibold">{{ (score * 100) | round | int }}</span>
+            </div>
+            <ul class="mt-3 space-y-1">
+              {% for r in rules %}
+                <li class="flex items-start gap-2 font-mono text-[11px] {{ 'text-rose-600 dark:text-rose-400' if r.startswith(('title_object', 'residential', 'neither', 'non_industrial', 'letting')) else 'text-slate-600 dark:text-slate-400' }}">
+                  <span>{{ '−' if r.startswith(('title_object', 'residential', 'neither', 'non_industrial', 'letting')) else '+' }}</span><span class="break-all">{{ r }}</span>
+                </li>
+              {% else %}
+                <li class="text-xs text-slate-400">—</li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endfor %}
+      </div>
+      {% if ev.get('land_snippet') or ev.get('development_snippet') %}
+      <div class="border-t border-slate-100 px-5 py-4 dark:border-white/[0.06]">
+        <div class="kicker mb-2">{{ t('det.evidence') }}</div>
+        {% for key in ['land_snippet', 'development_snippet'] if ev.get(key) %}
+          <blockquote class="mb-2 border-l-2 {{ 'border-land-400' if key == 'land_snippet' else 'border-box-400' }} pl-3 text-sm text-slate-600 italic dark:text-slate-400">„{{ ev[key] }}“</blockquote>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% if ev.get('areas') %}
+      <div class="border-t border-slate-100 px-5 py-4 dark:border-white/[0.06]">
+        <div class="kicker mb-2">{{ t('sig.area') }}</div>
+        <ul class="space-y-1 text-sm">
+          {% for a in ev['areas'] %}
+            <li class="flex items-baseline gap-3"><span class="w-24 shrink-0 text-right font-mono text-xs">{{ fmt_area(a.sqm, locale) }}</span><span class="chip {{ 'chip-land' if a.kind == 'plot' else 'chip-muted' }} text-[10px]">{{ a.kind }}</span><span class="truncate text-xs text-slate-500 dark:text-slate-400">… {{ a.snippet }} …</span></li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+    </section>
+
+    <!-- location resolution -->
+    <section class="card">
+      <div class="card-head"><h2 class="card-title">{{ t('det.location') }}</h2>{{ geo_chip(s.geocode_status, s.geocode_precision) }}</div>
+      <div class="px-5 py-4">
+        {% if s.geocode_notes %}
+          <ul class="mb-4 space-y-1.5">
+            {% for n in s.geocode_notes %}
+              <li class="flex gap-2 text-sm text-slate-600 dark:text-slate-400"><span class="text-amber-500">●</span>{{ n }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+        <div class="kicker mb-2">{{ t('det.candidates') }}</div>
+        <div class="overflow-x-auto">
+          <table class="table-base text-xs">
+            <thead><tr><th>Text</th><th>kind</th><th>origin</th><th>{{ t('prec.municipality') }}</th><th class="text-right">score</th></tr></thead>
+            <tbody>
+              {% for c in s.location_candidates or [] %}
+                <tr>
+                  <td class="font-medium">{{ c.text }}</td>
+                  <td><span class="chip chip-muted text-[10px]">{{ c.kind }}</span></td>
+                  <td class="font-mono text-slate-500">{{ c.origin }}</td>
+                  <td>{{ c.municipality or '—' }}{% if c.district %} · {{ c.district }}{% endif %}{% if c.street %} · {{ c.street }} {{ c.house_number or '' }}{% endif %}</td>
+                  <td class="text-right font-mono">{{ c.score }}</td>
+                </tr>
+              {% else %}
+                <tr><td colspan="5" class="text-slate-400">—</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <details class="card group">
+      <summary class="card-head cursor-pointer list-none"><h2 class="card-title">{{ t('det.raw') }}</h2><span class="text-slate-400 transition group-open:rotate-180">⌄</span></summary>
+      <pre class="max-h-[32rem] overflow-auto px-5 py-4 font-mono text-[11px] leading-relaxed text-slate-600 dark:text-slate-400">{{ s | tojson_pretty }}</pre>
+    </details>
+  </div>
+
+  <!-- side column -->
+  <aside class="space-y-6">
+    <section class="card overflow-hidden">
+      {% if s.lon is not none %}
+        <div class="h-64" data-point-map data-lon="{{ s.lon }}" data-lat="{{ s.lat }}" data-type="{{ s.signal_type }}" data-precision="{{ s.geocode_precision }}"
+             data-style-light="{{ map_style }}" data-style-dark="{{ map_style_dark }}"></div>
+        <dl class="divide-y divide-slate-100 text-sm dark:divide-white/[0.06]">
+          <div class="px-5 py-3">
+            <dt class="kicker">EPSG:25832 (ETRS89 / UTM 32N)</dt>
+            <dd class="mt-1 flex items-center justify-between gap-2 font-mono text-[13px]">
+              <span>x {{ '%.2f' | format(s.x_25832) }}<br>y {{ '%.2f' | format(s.y_25832) }}</span>
+              <button type="button" class="btn btn-ghost px-2 py-1 text-xs" data-copy="{{ s.geom_wkt }}" title="WKT kopieren">WKT</button>
+            </dd>
+          </div>
+          <div class="px-5 py-3">
+            <dt class="kicker">WGS84</dt>
+            <dd class="mt-1 font-mono text-[13px]">{{ '%.6f' | format(s.lat) }}, {{ '%.6f' | format(s.lon) }}</dd>
+          </div>
+          <div class="grid grid-cols-2 px-5 py-3">
+            <div><dt class="kicker">{{ t('det.precision') }}</dt><dd class="mt-1">{{ t('prec.' ~ s.geocode_precision) }}</dd></div>
+            <div><dt class="kicker">{{ t('det.provider') }}</dt><dd class="mt-1 font-mono text-xs">{{ s.geocode_provider }}<br><span class="text-slate-400">{{ s.geocode_provider_ref }}</span></dd></div>
+          </div>
+        </dl>
+      {% else %}
+        <div class="grain px-5 py-8 text-center">
+          <div class="mx-auto mb-3 grid size-10 place-items-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-400/10 dark:text-amber-300">?</div>
+          <div class="font-medium">{{ t('det.no_point') }}</div>
+          <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ t('det.no_point_text') }}</p>
+        </div>
+      {% endif %}
+    </section>
+
+    {% if s.quality_flags %}
+    <section class="card">
+      <div class="card-head"><h2 class="card-title">{{ t('det.flags') }}</h2></div>
+      <div class="flex flex-wrap gap-1.5 px-5 py-4">
+        {% for f in s.quality_flags %}<span class="chip chip-warn font-mono text-[10px]">{{ f }}</span>{% endfor %}
+      </div>
+    </section>
+    {% endif %}
+
+    <section class="card">
+      <div class="card-head"><h2 class="card-title">{{ t('det.lineage') }}</h2></div>
+      <dl class="space-y-3 px-5 py-4 text-xs">
+        {% for label, value in [
+          ('source_system', s.source_system), ('source_record_id', s.source_record_id), ('task_id', s.task_id),
+          ('content_hash', s.content_hash[:16] ~ '…'), ('raw_sha256', (s.raw_sha256 or '')[:16] ~ '…'),
+          ('record_version', s.record_version), ('first_seen_at', fmt_date(s.first_seen_at, locale, True)),
+          ('last_seen_at', fmt_date(s.last_seen_at, locale, True)), ('last_ingest_run', (s.last_ingest_run_id | string)[:8]),
+        ] %}
+          <div class="flex justify-between gap-3"><dt class="font-mono text-slate-500">{{ label }}</dt><dd class="truncate text-right font-mono text-slate-800 dark:text-slate-200" title="{{ value }}">{{ value }}</dd></div>
+        {% endfor %}
+      </dl>
+    </section>
+
+    {% if nearby %}
+    <section class="card">
+      <div class="card-head"><h2 class="card-title">{{ t('det.nearby') }}</h2></div>
+      <ul class="divide-y divide-slate-100 dark:divide-white/[0.06]">
+        {% for n in nearby %}
+          <li><a href="/signale/{{ n.signal_id }}" class="group flex items-start gap-3 px-5 py-3 hover:bg-slate-50 dark:hover:bg-white/[0.03]">
+            <span class="mt-1.5 {{ 'dot-land' if n.signal_type == 'commercial_land_disposal' else 'dot-box' }} shrink-0"></span>
+            <span class="min-w-0 flex-1"><span class="block text-sm leading-snug group-hover:underline">{{ n.title }}</span><span class="text-xs text-slate-500">{{ n.municipality }} · {{ fmt_number(n.distance_m / 1000, locale, 1) }} km</span></span>
+          </a></li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/vendor/maplibre/maplibre-gl.js" defer></script>
+<script src="/static/js/map.js" defer></script>
+{% endblock %}

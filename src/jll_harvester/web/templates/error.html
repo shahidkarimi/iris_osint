@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}{{ code }}{% endblock %}
+{% block content %}
+<div class="card grain mx-auto max-w-xl px-8 py-16 text-center">
+  <div class="font-mono text-5xl font-semibold tracking-tight text-slate-300 dark:text-slate-700">{{ code }}</div>
+  <p class="mt-4 text-slate-600 dark:text-slate-400">{{ detail }}</p>
+  <a href="/" class="btn btn-primary mt-6">← {{ t('nav.dashboard') }}</a>
+</div>
+{% endblock %}

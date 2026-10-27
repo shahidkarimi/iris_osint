@@ -1,0 +1,177 @@
+@import "tailwindcss";
+
+@source "../../templates";
+@source "../js";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@font-face {
+  font-family: "Inter Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("../fonts/inter-latin-wght-normal.woff2") format("woff2-variations");
+}
+
+@font-face {
+  font-family: "JetBrains Mono Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 800;
+  src: url("../fonts/jetbrains-mono-latin-wght-normal.woff2") format("woff2-variations");
+}
+
+@theme {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* signal palette — land = ochre/earth, big-box = steel blue */
+  --color-land-50: #fff8eb;
+  --color-land-100: #fdecc8;
+  --color-land-400: #f2a93b;
+  --color-land-500: #e08a12;
+  --color-land-600: #c26d0a;
+  --color-land-700: #9a520c;
+  --color-box-50: #eef5ff;
+  --color-box-100: #d9e8ff;
+  --color-box-400: #5b9cf6;
+  --color-box-500: #3478ea;
+  --color-box-600: #1f5fd6;
+  --color-box-700: #1c4bad;
+
+  --color-ink-950: #0a0d14;
+  --color-ink-900: #0f1420;
+  --color-ink-850: #141a28;
+  --color-ink-800: #1b2232;
+
+  --shadow-card: 0 1px 2px rgb(15 20 32 / 0.04), 0 4px 16px -4px rgb(15 20 32 / 0.08);
+  --animate-fade-up: fade-up 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+  }
+}
+
+@layer base {
+  html {
+    font-feature-settings: "cv11", "ss01", "tnum";
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    @apply bg-stone-50 text-slate-900 dark:bg-ink-950 dark:text-slate-100;
+  }
+  ::selection {
+    @apply bg-land-400/40;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-box-500;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-slate-200/80 bg-white shadow-(--shadow-card)
+      dark:border-white/[0.07] dark:bg-ink-900 dark:shadow-none;
+  }
+  .card-head {
+    @apply flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-3.5
+      dark:border-white/[0.06];
+  }
+  .card-title {
+    @apply text-[13px] font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400;
+  }
+  .kicker {
+    @apply text-[11px] font-semibold tracking-[0.14em] text-slate-500 uppercase dark:text-slate-400;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset;
+  }
+  .chip-land {
+    @apply bg-land-50 text-land-700 ring-land-400/40 dark:bg-land-500/10 dark:text-land-400 dark:ring-land-400/25;
+  }
+  .chip-box {
+    @apply bg-box-50 text-box-700 ring-box-400/40 dark:bg-box-500/10 dark:text-box-400 dark:ring-box-400/25;
+  }
+  .chip-muted {
+    @apply bg-slate-50 text-slate-600 ring-slate-200 dark:bg-white/5 dark:text-slate-300 dark:ring-white/10;
+  }
+  .chip-ok {
+    @apply bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-400/10 dark:text-emerald-300 dark:ring-emerald-400/20;
+  }
+  .chip-warn {
+    @apply bg-amber-50 text-amber-800 ring-amber-600/20 dark:bg-amber-400/10 dark:text-amber-300 dark:ring-amber-400/20;
+  }
+  .chip-err {
+    @apply bg-rose-50 text-rose-700 ring-rose-600/20 dark:bg-rose-400/10 dark:text-rose-300 dark:ring-rose-400/20;
+  }
+  .dot-land { @apply size-2 rounded-full bg-land-500; }
+  .dot-box { @apply size-2 rounded-full bg-box-500; }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-3.5 py-2 text-sm font-medium
+      transition active:scale-[0.98];
+  }
+  .btn-primary {
+    @apply bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-ink-950 dark:hover:bg-slate-200;
+  }
+  .btn-ghost {
+    @apply text-slate-600 ring-1 ring-slate-200 ring-inset hover:bg-slate-100
+      dark:text-slate-300 dark:ring-white/10 dark:hover:bg-white/5;
+  }
+  .field {
+    @apply w-full rounded-xl border-0 bg-white px-3 py-2 text-sm text-slate-900 ring-1 ring-slate-200 ring-inset
+      placeholder:text-slate-400 focus:ring-2 focus:ring-box-500
+      dark:bg-ink-850 dark:text-slate-100 dark:ring-white/10;
+  }
+  .nav-link {
+    @apply rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900
+      dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-white;
+  }
+  .nav-link[aria-current="page"] {
+    @apply bg-slate-900 text-white hover:bg-slate-900 hover:text-white dark:bg-white dark:text-ink-950;
+  }
+  .table-base {
+    @apply w-full text-left text-sm;
+  }
+  .table-base th {
+    @apply px-4 py-2.5 text-[11px] font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400;
+  }
+  .table-base td {
+    @apply border-t border-slate-100 px-4 py-3 align-top dark:border-white/[0.06];
+  }
+  .prose-iris {
+    @apply text-[15px] leading-7 text-slate-700 dark:text-slate-300;
+  }
+  .prose-iris h2 {
+    @apply mt-10 mb-3 text-xl font-semibold tracking-tight text-slate-900 dark:text-white;
+  }
+  .prose-iris h3 {
+    @apply mt-6 mb-2 font-semibold text-slate-900 dark:text-white;
+  }
+  .prose-iris p { @apply my-3; }
+  .prose-iris ul { @apply my-3 list-disc space-y-1.5 pl-5; }
+  .prose-iris code {
+    @apply rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-[0.85em] text-slate-800 dark:bg-white/10 dark:text-slate-200;
+  }
+  .prose-iris a { @apply font-medium text-box-600 underline decoration-box-400/40 underline-offset-2 dark:text-box-400; }
+  .bar-track { @apply h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-white/[0.06]; }
+}
+
+/* MapLibre popups in our visual language */
+.maplibregl-popup-content {
+  @apply rounded-xl! p-0! shadow-xl! dark:bg-ink-850! dark:text-slate-100!;
+}
+.dark .maplibregl-popup-tip {
+  border-top-color: var(--color-ink-850) !important;
+  border-bottom-color: var(--color-ink-850) !important;
+}
+.maplibregl-popup-close-button {
+  @apply right-1! top-1! rounded-md! px-1.5! text-base! text-slate-400! hover:bg-slate-100! dark:hover:bg-white/10!;
+}
+.maplibregl-ctrl-attrib {
+  @apply text-[10px]!;
+}
+.grain {
+  background-image: radial-gradient(circle at 1px 1px, rgb(148 163 184 / 0.18) 1px, transparent 0);
+  background-size: 22px 22px;
+}

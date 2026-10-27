@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import run_chip, severity_chip, geo_chip with context %}
+{% block title %}{{ t('nav.quality') }}{% endblock %}
+
+{% block content %}
+{% set failed = checks | rejectattr('passed') | list %}
+<div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+  <div>
+    <p class="kicker">ingest_run · ingest_issue · validation.sql</p>
+    <h1 class="mt-1 text-2xl font-semibold tracking-tight">{{ t('nav.quality') }}</h1>
+  </div>
+  <a href="/export/quality-report.md" class="btn btn-ghost">{{ t('q.report') }} ↗</a>
+</div>
+
+<!-- health strip -->
+<section class="mb-6 grid gap-4 sm:grid-cols-3">
+  <div class="card flex items-center gap-4 p-5">
+    <div class="grid size-11 place-items-center rounded-xl {{ 'bg-emerald-100 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300' if not failed else 'bg-rose-100 text-rose-700 dark:bg-rose-400/10 dark:text-rose-300' }} text-lg font-bold">{{ '✓' if not failed else '!' }}</div>
+    <div><div class="text-2xl font-semibold tabular-nums">{{ checks | selectattr('passed') | list | length }}/{{ checks | length }}</div><div class="text-xs text-slate-500">{{ t('q.checks') }} {{ t('q.pass') }}</div></div>
+  </div>
+  <div class="card flex items-center gap-4 p-5">
+    <div class="grid size-11 place-items-center rounded-xl bg-slate-100 text-lg dark:bg-white/5">⟳</div>
+    <div><div class="text-2xl font-semibold tabular-nums">{{ runs | length }}</div><div class="text-xs text-slate-500">{{ t('q.runs') }}{% if run %} · {{ run_chip(run.status) }}{% endif %}</div></div>
+  </div>
+  <div class="card flex items-center gap-4 p-5">
+    <div class="grid size-11 place-items-center rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-400/10 dark:text-amber-300 text-lg">⌖</div>
+    <div><div class="text-2xl font-semibold tabular-nums">{{ no_point | length }}</div><div class="text-xs text-slate-500">{{ t('q.no_point') }}</div></div>
+  </div>
+</section>
+
+<div class="grid gap-6 lg:grid-cols-5">
+  <!-- validation checks -->
+  <section class="card lg:col-span-3">
+    <div class="card-head"><h2 class="card-title">{{ t('q.checks') }}</h2><code class="font-mono text-[11px] text-slate-400">db/validation.sql</code></div>
+    <ul class="divide-y divide-slate-100 dark:divide-white/[0.06]">
+      {% for c in checks %}
+      <li>
+        <details class="group">
+          <summary class="flex cursor-pointer list-none items-center gap-3 px-5 py-3 hover:bg-slate-50 dark:hover:bg-white/[0.03]">
+            <span class="grid size-5 shrink-0 place-items-center rounded-full text-[11px] font-bold {{ 'bg-emerald-500 text-white' if c.passed else 'bg-rose-500 text-white' }}">{{ '✓' if c.passed else '✕' }}</span>
+            <span class="min-w-0 flex-1">
+              <span class="block font-mono text-[13px] font-medium">{{ c.id }}</span>
+              <span class="block truncate text-xs text-slate-500 dark:text-slate-400">{{ c.description }}</span>
+            </span>
+            <span class="chip {{ 'chip-err' if c.severity == 'error' else ('chip-warn' if c.severity == 'warning' else 'chip-muted') }} text-[10px]">{{ c.severity }}</span>
+            <span class="w-10 text-right font-mono text-sm">{{ c.value if c.value is not none else '—' }}</span>
+          </summary>
+          <pre class="mx-5 mb-4 overflow-x-auto rounded-xl bg-ink-950 p-4 font-mono text-[11px] leading-relaxed text-slate-300">{{ c.sql }}</pre>
+          {% if c.error %}<p class="mx-5 mb-4 text-xs text-rose-600">{{ c.error }}</p>{% endif %}
+        </details>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <!-- source verification -->
+  <section class="card lg:col-span-2">
+    <div class="card-head"><h2 class="card-title">{{ t('q.source') }}</h2></div>
+    {% set sc = (source_run.source_check if source_run else {}) or {} %}
+    <div class="space-y-4 px-5 py-4 text-sm">
+      {% if sc.get('brief_endpoint') %}
+        <div>
+          <div class="kicker mb-1.5">Brief endpoint</div>
+          <ol class="space-y-1.5 font-mono text-[11px]">
+            <li class="break-all text-slate-500">{{ sc.brief_endpoint }}</li>
+            {% for hop in sc.get('redirect_chain', []) %}<li class="flex gap-2"><span class="chip chip-warn text-[10px]">{{ hop.status }}</span><span class="break-all text-slate-500">→ {{ hop.url }}</span></li>{% endfor %}
+            <li class="flex gap-2"><span class="chip chip-ok text-[10px]">{{ sc.get('final_status') }}</span><span class="break-all">{{ sc.get('final_url') }}</span></li>
+          </ol>
+        </div>
+        {% set rb = sc.get('robots') or {} %}
+        <div>
+          <div class="kicker mb-1.5">robots.txt</div>
+          <ul class="space-y-1 text-xs">
+            <li class="flex justify-between"><span>Query strings ({{ '/*?' }}) disallowed</span><strong>{{ 'ja' if rb.get('disallow_query_strings') else 'nein' }}</strong></li>
+            <li class="flex justify-between"><span>Sitemap allowed</span><strong>{{ 'ja' if rb.get('sitemap_allowed') else 'nein' }}</strong></li>
+            <li class="flex justify-between"><span>Crawl-delay</span><strong>{{ rb.get('crawl_delay') or '—' }}</strong></li>
+          </ul>
+        </div>
+        <p class="rounded-xl bg-slate-50 p-3 text-xs leading-relaxed text-slate-600 dark:bg-white/[0.03] dark:text-slate-400">
+          {% if locale == 'de' %}Der im Brief genannte Endpunkt ist veraltet (301). Die Listenansicht wird clientseitig gerendert und paginiert per Query-String, was robots.txt untersagt. Erfasst wird daher über die in robots.txt verlinkte Sitemap mit <code class="font-mono">lastmod</code> für inkrementelle Läufe.{% else %}The brief's endpoint is obsolete (301). The listing is rendered client-side and paginates via query strings, which robots.txt forbids. Harvesting therefore uses the robots-advertised sitemap, whose <code class="font-mono">lastmod</code> drives incremental runs.{% endif %}
+        </p>
+      {% else %}
+        <p class="text-slate-500">{{ (sc | tojson_pretty) if sc else '—' }}</p>
+      {% endif %}
+    </div>
+  </section>
+</div>
+
+<!-- runs -->
+<section class="card mt-6 overflow-hidden">
+  <div class="card-head"><h2 class="card-title">{{ t('q.runs') }}</h2></div>
+  <div class="overflow-x-auto">
+    <table class="table-base">
+      <thead><tr><th>Run</th><th>Start</th><th>Mode</th><th>Status</th><th class="text-right">Dauer</th><th>Zähler</th><th class="text-right">Err / Warn</th></tr></thead>
+      <tbody>
+        {% for r in runs %}
+          {% set c = (r.stats or {}).get('counters', {}) %}
+          <tr>
+            <td class="font-mono text-xs">{{ (r.run_id | string)[:8] }}</td>
+            <td class="text-xs whitespace-nowrap">{{ fmt_date(r.started_at, locale, True) }}</td>
+            <td><span class="chip chip-muted text-[10px]">{{ r.mode }}</span></td>
+            <td>{{ run_chip(r.status) }}</td>
+            <td class="text-right font-mono text-xs">{{ (r.stats or {}).get('duration_seconds', '—') }} s</td>
+            <td class="font-mono text-[11px] text-slate-500">
+              {% for k in ['discovered', 'skipped_unchanged', 'fetched', 'signal_inserted', 'signal_updated', 'signal_unchanged', 'rejected', 'retracted', 'fetch_error', 'parse_error'] if c.get(k) %}
+                <span class="mr-2 whitespace-nowrap">{{ k }}=<strong class="text-slate-800 dark:text-slate-200">{{ c[k] }}</strong></span>
+              {% endfor %}
+            </td>
+            <td class="text-right font-mono text-xs"><span class="{{ 'text-rose-600' if r.errors }}">{{ r.errors }}</span> / <span class="{{ 'text-amber-600' if r.warnings }}">{{ r.warnings }}</span></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<div class="mt-6 grid gap-6 lg:grid-cols-2">
+  <!-- issues -->
+  <section class="card">
+    <div class="card-head"><h2 class="card-title">{{ t('q.issues') }}</h2><span class="font-mono text-xs text-slate-400">{{ issues | length }}</span></div>
+    {% if issues %}
+    <ul class="max-h-[34rem] divide-y divide-slate-100 overflow-y-auto dark:divide-white/[0.06]">
+      {% for i in issues %}
+        <li class="px-5 py-3">
+          <div class="flex items-center gap-2">{{ severity_chip(i.severity) }}<span class="font-mono text-[11px] text-slate-500">{{ i.stage }} · {{ i.code }}</span></div>
+          <p class="mt-1 text-sm leading-snug">{{ i.message }}</p>
+          {% if i.source_url %}<a href="{{ i.source_url }}" target="_blank" rel="noopener noreferrer" class="mt-0.5 block truncate font-mono text-[11px] text-box-600 hover:underline dark:text-box-400">{{ i.source_url }}</a>{% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+      <p class="px-5 py-8 text-center text-sm text-slate-500">{{ t('q.all_clear') }}</p>
+    {% endif %}
+  </section>
+
+  <div class="space-y-6">
+    <!-- records without point -->
+    <section class="card">
+      <div class="card-head"><h2 class="card-title">{{ t('q.no_point') }}</h2></div>
+      <ul class="max-h-80 divide-y divide-slate-100 overflow-y-auto dark:divide-white/[0.06]">
+        {% for r in no_point %}
+          <li class="px-5 py-3">
+            <div class="flex items-start justify-between gap-3">
+              <a href="/signale/{{ r.signal_id }}" class="text-sm leading-snug font-medium hover:underline">{{ r.title }}</a>
+              {{ geo_chip(r.geocode_status) }}
+            </div>
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ (r.geocode_notes or []) | join(' · ') }}</p>
+          </li>
+        {% else %}
+          <li class="px-5 py-6 text-center text-sm text-slate-500">—</li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <!-- rejections -->
+    <section class="card">
+      <div class="card-head"><h2 class="card-title">{{ t('q.rejections') }}</h2></div>
+      <div class="flex flex-wrap gap-1.5 border-b border-slate-100 px-5 py-3 dark:border-white/[0.06]">
+        {% for r in corpus.reasons %}<span class="chip chip-muted font-mono text-[10px]">{{ r.k }} · {{ r.n }}</span>{% endfor %}
+      </div>
+      <ul class="max-h-72 divide-y divide-slate-100 overflow-y-auto dark:divide-white/[0.06]">
+        {% for r in rejections %}
+          <li class="flex items-start justify-between gap-3 px-5 py-2.5">
+            <a href="{{ r.url }}" target="_blank" rel="noopener noreferrer" class="text-sm leading-snug hover:underline">{{ r.title or r.source_record_id }}</a>
+            <span class="chip chip-muted shrink-0 font-mono text-[10px]">{{ r.decision_reason }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  </div>
+</div>
+{% endblock %}

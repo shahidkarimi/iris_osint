@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}{{ t('nav.map') }}{% endblock %}
+{% block head %}<link rel="stylesheet" href="/static/vendor/maplibre/maplibre-gl.css">{% endblock %}
+{% block main_class %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="relative flex h-[calc(100dvh-4rem)] flex-col md:flex-row max-md:h-[calc(100dvh-6.75rem)]">
+  <aside class="order-2 flex max-h-[45%] flex-col border-t border-slate-200 bg-white md:order-1 md:max-h-none md:w-96 md:border-t-0 md:border-r dark:border-white/[0.06] dark:bg-ink-900">
+    <div class="space-y-4 border-b border-slate-100 p-4 dark:border-white/[0.06]">
+      <div class="flex items-baseline justify-between">
+        <h1 class="text-lg font-semibold tracking-tight">{{ t('nav.map') }}</h1>
+        <span class="text-xs text-slate-500"><span class="font-mono" data-map-count>–</span> {% if locale == 'de' %}im Ausschnitt{% else %}in view{% endif %}</span>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button type="button" data-map-type="commercial_land_disposal" aria-pressed="true" class="chip chip-land cursor-pointer py-1 aria-[pressed=false]:opacity-40 aria-[pressed=false]:grayscale">
+          <span class="dot-land"></span>{{ t('type.commercial_land_disposal') }}
+        </button>
+        <button type="button" data-map-type="big_box_industrial_development" aria-pressed="true" class="chip chip-box cursor-pointer py-1 aria-[pressed=false]:opacity-40 aria-[pressed=false]:grayscale">
+          <span class="dot-box"></span>{{ t('type.big_box_industrial_development') }}
+        </button>
+      </div>
+      <div class="flex gap-2">
+        <select class="field" data-map-year aria-label="{{ t('sig.year') }}">
+          <option value="">{{ t('sig.all_years') }}</option>
+          {% for y in summary.years %}<option value="{{ y }}">{{ y }}</option>{% endfor %}
+        </select>
+        <button type="button" class="btn btn-ghost whitespace-nowrap" data-map-reset>⤢ DE</button>
+      </div>
+      <div class="flex items-center gap-4 text-[11px] text-slate-500 dark:text-slate-400">
+        <span class="flex items-center gap-1.5"><span class="inline-block size-3 rounded-full border-[2.5px] border-white bg-slate-500 shadow ring-1 ring-slate-300"></span>{{ t('prec.address') }}</span>
+        <span class="flex items-center gap-1.5"><span class="inline-block size-3 rounded-full border border-white bg-slate-500 shadow ring-4 ring-slate-400/20"></span>{{ t('prec.district') }} / {{ t('prec.municipality') }}</span>
+      </div>
+    </div>
+    <div class="flex-1 overflow-y-auto p-2" data-map-list></div>
+    <div class="border-t border-slate-100 p-3 text-[11px] text-slate-500 dark:border-white/[0.06]">
+      {% if locale == 'de' %}Nur Datensätze mit validiertem Punkt. Mehrdeutige/unverortete Signale: {% else %}Only records with a validated point. Ambiguous/unresolved signals: {% endif %}
+      <a class="font-medium text-box-600 hover:underline dark:text-box-400" href="/signale?geo=ambiguous">{{ summary.ambiguous }}</a> / <a class="font-medium text-box-600 hover:underline dark:text-box-400" href="/signale?geo=unresolved">{{ summary.unresolved }}</a>
+    </div>
+  </aside>
+  <div class="relative order-1 flex-1 md:order-2" data-signals-map data-mode="full" data-src="/api/signals.geojson"
+       data-style-light="{{ map_style }}" data-style-dark="{{ map_style_dark }}"
+       data-i18n='{{ {"commercial_land_disposal": t("type.commercial_land_disposal"), "big_box_industrial_development": t("type.big_box_industrial_development"), "prec.address": t("prec.address"), "prec.street": t("prec.street"), "prec.district": t("prec.district"), "prec.municipality": t("prec.municipality")} | tojson | forceescape }}'></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/vendor/maplibre/maplibre-gl.js" defer></script>
+<script src="/static/js/map.js" defer></script>
+{% endblock %}

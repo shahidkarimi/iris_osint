@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="{{ locale }}" class="h-full">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ t('app.tagline') }}{% endblock %} · IRIS</title>
+  <meta name="description" content="IRIS-SIG-45 — commercial land disposals and big-box industrial development signals harvested from JLL Germany's newsroom into PostGIS staging.">
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <script src="/static/js/theme.js"></script>
+  <link rel="preload" href="/static/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/static/dist/app.css?v={{ version }}">
+  {% block head %}{% endblock %}
+</head>
+<body class="min-h-full antialiased">
+  <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 btn btn-primary">Zum Inhalt</a>
+
+  <header class="sticky top-0 z-40 border-b border-slate-200/70 bg-stone-50/80 backdrop-blur-xl dark:border-white/[0.06] dark:bg-ink-950/75">
+    <div class="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6 lg:px-8">
+      <a href="/" class="group flex items-center gap-3">
+        {% include "partials/logo.html" %}
+        <div class="leading-tight">
+          <div class="flex items-center gap-2 text-[15px] font-semibold tracking-tight">IRIS <span class="font-mono text-[11px] font-medium text-slate-400">{{ task_id }}</span></div>
+          <div class="hidden text-xs text-slate-500 sm:block dark:text-slate-400">{{ t('app.tagline') }}</div>
+        </div>
+      </a>
+
+      <nav class="ml-auto hidden items-center gap-1 md:flex" aria-label="Hauptnavigation">
+        {% set items = [('/', 'nav.dashboard'), ('/signale', 'nav.signals'), ('/karte', 'nav.map'), ('/qualitaet', 'nav.quality'), ('/methodik', 'nav.method')] %}
+        {% for href, key in items %}
+          <a href="{{ href }}" class="nav-link" {% if (href == '/' and path == '/') or (href != '/' and path.startswith(href)) %}aria-current="page"{% endif %}>{{ t(key) }}</a>
+        {% endfor %}
+      </nav>
+
+      <div class="ml-auto flex items-center gap-1 md:ml-2">
+        <div class="flex rounded-lg p-0.5 ring-1 ring-slate-200 ring-inset dark:ring-white/10" role="group" aria-label="Sprache">
+          {% for code in ['de', 'en'] %}
+            <a href="/lang/{{ code }}" class="rounded-md px-2 py-1 text-xs font-semibold uppercase {% if locale == code %}bg-slate-900 text-white dark:bg-white dark:text-ink-950{% else %}text-slate-500 hover:text-slate-900 dark:hover:text-white{% endif %}">{{ code }}</a>
+          {% endfor %}
+        </div>
+        <button type="button" data-theme-toggle class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-white" aria-label="Farbschema wechseln">
+          <svg class="size-[18px] dark:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+          <svg class="hidden size-[18px] dark:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        </button>
+      </div>
+    </div>
+    <nav class="flex gap-1 overflow-x-auto border-t border-slate-200/70 px-4 py-2 md:hidden dark:border-white/[0.06]" aria-label="Mobile Navigation">
+      {% for href, key in items %}
+        <a href="{{ href }}" class="nav-link whitespace-nowrap" {% if (href == '/' and path == '/') or (href != '/' and path.startswith(href)) %}aria-current="page"{% endif %}>{{ t(key) }}</a>
+      {% endfor %}
+    </nav>
+  </header>
+
+  <main id="main" class="{% block main_class %}mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8{% endblock %}">
+    {% block content %}{% endblock %}
+  </main>
+
+  {% block footer %}
+  <footer class="mx-auto max-w-7xl px-4 pt-4 pb-10 text-xs text-slate-500 sm:px-6 lg:px-8 dark:text-slate-500">
+    <div class="flex flex-col gap-2 border-t border-slate-200 pt-6 sm:flex-row sm:items-center sm:justify-between dark:border-white/[0.06]">
+      <p>{{ t('footer.data') }}</p>
+      <p class="font-mono">iris_staging.signal_ingest · EPSG:25832 · v{{ version }} · <a class="underline-offset-2 hover:underline" href="/api/docs">API</a></p>
+    </div>
+  </footer>
+  {% endblock %}
+  <script src="/static/js/app.js" defer></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

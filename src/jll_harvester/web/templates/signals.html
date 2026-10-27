@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import type_chip, geo_chip, confidence, empty_state with context %}
+{% block title %}{{ t('nav.signals') }}{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+  <div>
+    <p class="kicker">iris_staging.signal_ingest</p>
+    <h1 class="mt-1 text-2xl font-semibold tracking-tight">{{ t('nav.signals') }} <span class="ml-1 font-mono text-base font-normal text-slate-400">{{ total }}</span></h1>
+  </div>
+  <div class="flex gap-2">
+    <a href="/export/signals.csv" class="btn btn-ghost">
+      <svg class="size-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.6L6.3 8.24a.75.75 0 1 0-1.1 1.02l4.25 4.5a.75.75 0 0 0 1.1 0l4.25-4.5a.75.75 0 1 0-1.1-1.02l-2.95 3.11v-8.6Z"/><path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z"/></svg>
+      CSV
+    </a>
+    <a href="/api/signals.geojson" class="btn btn-ghost">GeoJSON</a>
+  </div>
+</div>
+
+<form method="get" action="/signale" data-autosubmit class="card mb-6 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-[2fr_1.4fr_1fr_0.8fr_1fr_auto]">
+  <label class="relative">
+    <span class="sr-only">{{ t('sig.search') }}</span>
+    <svg class="pointer-events-none absolute top-2.5 left-3 size-4 text-slate-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.45 4.39l3.08 3.08a.75.75 0 1 1-1.06 1.06l-3.08-3.08A7 7 0 0 1 2 9Z" clip-rule="evenodd"/></svg>
+    <input type="search" name="q" value="{{ filters.q or '' }}" placeholder="{{ t('sig.search') }}" class="field pl-9">
+  </label>
+  <select name="typ" class="field" aria-label="Signaltyp">
+    <option value="">{{ t('type.all') }}</option>
+    {% for k in ['commercial_land_disposal', 'big_box_industrial_development'] %}
+      <option value="{{ k }}" {% if filters.typ == k %}selected{% endif %}>{{ t('type.' ~ k) }}</option>
+    {% endfor %}
+  </select>
+  <select name="geo" class="field" aria-label="Verortung">
+    <option value="">{{ t('geo.all') }}</option>
+    {% for k in ['resolved', 'ambiguous', 'unresolved', 'invalid'] %}
+      <option value="{{ k }}" {% if filters.geo == k %}selected{% endif %}>{{ t('geo.' ~ k) }}</option>
+    {% endfor %}
+  </select>
+  <select name="jahr" class="field" aria-label="{{ t('sig.year') }}">
+    <option value="">{{ t('sig.all_years') }}</option>
+    {% for y in years %}<option value="{{ y }}" {% if filters.jahr == y %}selected{% endif %}>{{ y }}</option>{% endfor %}
+  </select>
+  <select name="sort" class="field" aria-label="{{ t('sig.sort') }}">
+    {% for k in ['published_desc', 'published_asc', 'confidence_desc', 'area_desc'] %}
+      <option value="{{ k }}" {% if (filters.sort or 'published_desc') == k %}selected{% endif %}>{{ t('sort.' ~ k) }}</option>
+    {% endfor %}
+  </select>
+  <div class="flex gap-2">
+    {% if filters.ort %}<input type="hidden" name="ort" value="{{ filters.ort }}">{% endif %}
+    <button class="btn btn-primary flex-1">{{ t('sig.filter') }}</button>
+    <a href="/signale" class="btn btn-ghost" title="{{ t('sig.reset') }}">✕</a>
+  </div>
+</form>
+
+{% if filters.ort %}
+  <div class="mb-4 flex items-center gap-2 text-sm">
+    <span class="text-slate-500">{{ t('sig.location') }}:</span>
+    <a href="/signale?{{ qs(ort='') }}" class="chip chip-muted">{{ filters.ort }} ✕</a>
+  </div>
+{% endif %}
+
+{% if rows %}
+<div class="card overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="table-base">
+      <thead class="bg-slate-50/60 dark:bg-white/[0.02]">
+        <tr>
+          <th class="w-28">{{ t('sig.published') }}</th>
+          <th>Signal</th>
+          <th class="hidden md:table-cell">{{ t('sig.location') }}</th>
+          <th class="hidden text-right lg:table-cell">{{ t('sig.area') }}</th>
+          <th class="hidden xl:table-cell">{{ t('sig.confidence') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        <tr class="group transition hover:bg-slate-50 dark:hover:bg-white/[0.03]">
+          <td class="font-mono text-xs whitespace-nowrap text-slate-500 dark:text-slate-400">{{ fmt_date(r.published_at, locale) }}</td>
+          <td class="min-w-[18rem]">
+            <a href="/signale/{{ r.signal_id }}" class="font-medium leading-snug text-slate-900 group-hover:underline dark:text-slate-100">{{ r.title }}</a>
+            <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
+              {{ type_chip(r.signal_type, True) }}
+              {% if r.deal_type %}<span class="chip chip-muted">{{ t('deal.' ~ r.deal_type) }}</span>{% endif %}
+              {% for f in (r.quality_flags or [])[:2] %}<span class="chip chip-muted font-mono text-[10px]">{{ f }}</span>{% endfor %}
+            </div>
+          </td>
+          <td class="hidden md:table-cell">
+            <div class="text-sm">{{ r.municipality or '—' }}{% if r.district %}<span class="text-slate-500"> · {{ r.district }}</span>{% endif %}</div>
+            {% if r.street %}<div class="text-xs text-slate-500 dark:text-slate-400">{{ r.street }}</div>{% endif %}
+            <div class="mt-1">{{ geo_chip(r.geocode_status, r.geocode_precision) }}</div>
+          </td>
+          <td class="hidden text-right font-mono text-xs whitespace-nowrap lg:table-cell">
+            {% if r.area_sqm %}<div title="{{ t('sig.floor') }}">{{ fmt_area(r.area_sqm, locale, hectares=False) }}</div>{% endif %}
+            {% if r.plot_area_sqm %}<div class="text-land-600 dark:text-land-400" title="{{ t('sig.plot') }}">{{ fmt_area(r.plot_area_sqm, locale) }} ▦</div>{% endif %}
+            {% if not r.area_sqm and not r.plot_area_sqm %}<span class="text-slate-400">—</span>{% endif %}
+          </td>
+          <td class="hidden xl:table-cell">{{ confidence(r.classification_confidence | float) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if pages > 1 %}
+  <nav class="flex items-center justify-between border-t border-slate-100 px-4 py-3 text-sm dark:border-white/[0.06]" aria-label="Seiten">
+    <span class="text-slate-500">{{ page }} / {{ pages }}</span>
+    <div class="flex gap-2">
+      {% if page > 1 %}<a class="btn btn-ghost" href="/signale?{{ qs(seite=page - 1) }}">← {{ t('sig.prev') }}</a>{% endif %}
+      {% if page < pages %}<a class="btn btn-ghost" href="/signale?{{ qs(seite=page + 1) }}">{{ t('sig.next') }} →</a>{% endif %}
+    </div>
+  </nav>
+  {% endif %}
+</div>
+{% elif filters %}
+  <div class="card px-6 py-14 text-center text-slate-500">{{ t('sig.none') }}</div>
+{% else %}
+  {{ empty_state() }}
+{% endif %}
+{% endblock %}
