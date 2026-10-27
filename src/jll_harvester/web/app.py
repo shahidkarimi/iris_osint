@@ -176,19 +176,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         typ: str | None = None,
         geo: str | None = None,
         q: str | None = None,
-        jahr: int | None = None,
+        jahr: str | None = None,
         ort: str | None = None,
         sort: str = "published_desc",
         seite: int = Query(1, ge=1),
     ) -> HTMLResponse:
+        # the filter form submits "jahr=" for "all years"; an int param would turn that into a JSON 422
+        year = int(jahr) if jahr and jahr.isdigit() else None
         flt = queries.SignalFilter(
-            signal_type=typ or None, geocode_status=geo or None, q=q or None, year=jahr, municipality=ort or None
+            signal_type=typ or None, geocode_status=geo or None, q=q or None, year=year, municipality=ort or None
         )
         with _Conn() as conn:
             rows, total = queries.list_signals(conn, flt, sort=sort, limit=PAGE_SIZE, offset=(seite - 1) * PAGE_SIZE)
             years = queries.summary(conn)["years"]
         params = {
-            k: v for k, v in {"typ": typ, "geo": geo, "q": q, "jahr": jahr, "ort": ort, "sort": sort}.items() if v
+            k: v for k, v in {"typ": typ, "geo": geo, "q": q, "jahr": year, "ort": ort, "sort": sort}.items() if v
         }
         pages = max(1, -(-total // PAGE_SIZE))
         return render(

@@ -198,6 +198,7 @@ def test_pages_render(client: TestClient) -> None:
         "/",
         "/signale",
         "/signale?typ=commercial_land_disposal&geo=resolved",
+        "/signale?q=&typ=&geo=&jahr=&sort=published_desc",  # form submit with "all years"
         "/karte",
         "/qualitaet",
         "/methodik",
