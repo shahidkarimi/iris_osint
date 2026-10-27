@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
 # ---- stage 1: build the dashboard stylesheet (Tailwind CSS v4) --------------------------------
-FROM node:22-alpine AS css
+FROM node:26-alpine AS css
 WORKDIR /build
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
