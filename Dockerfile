@@ -9,7 +9,7 @@ COPY src/jll_harvester/web ./src/jll_harvester/web
 RUN npm run build:css
 
 # ---- stage 2: Python application ---------------------------------------------------------------
-FROM python:3.12-slim AS app
+FROM python:3.13-slim AS app
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
