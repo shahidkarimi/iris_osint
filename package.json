@@ -7,7 +7,7 @@
     "watch:css": "tailwindcss -i src/jll_harvester/web/static/src/app.css -o src/jll_harvester/web/static/dist/app.css --watch"
   },
   "devDependencies": {
-    "@tailwindcss/cli": "4.1.11",
-    "tailwindcss": "4.1.11"
+    "@tailwindcss/cli": "4.3.3",
+    "tailwindcss": "4.3.3"
   }
 }
